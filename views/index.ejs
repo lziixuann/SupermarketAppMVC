@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <title>Supermarket App</title>
+    <style>
+        .product-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .hero-section {
+            background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 2rem;
+        }
+        .btn-floating {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        .product-image {
+            height: 200px;
+            object-fit: cover;
+            width: 100%;
+        }
+        .card-footer {
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-store me-2"></i>
+                Supermarket App
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/addProduct">
+                            <i class="fas fa-plus me-1"></i>
+                            Add New Product
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 mb-3">Welcome to Supermarket App!</h1>
+            <p class="lead mb-0">Manage your products with ease</p>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="container mb-5">
+        <% if (products && products.length) { %>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                <% products.forEach(function(product) { %>
+                    <div class="col">
+                        <div class="card h-100 product-card border-0 shadow-sm">
+                            <img src="images/<%= product.image %>" class="card-img-top product-image" alt="<%= product.productName %>">
+                            <div class="card-body">
+                                <h5 class="card-title"><%= product.productName %></h5>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-primary fw-bold">$<%= product.price.toFixed(2) %></span>
+                                    <span class="badge bg-secondary">Stock: <%= product.quantity %></span>
+                                </div>
+                            </div>
+                            <div class="card-footer border-0">
+                                <div class="d-flex justify-content-between">
+                                    <a href="/updateProduct/<%= product.productId %>" class="btn btn-outline-primary">
+                                        <i class="fas fa-edit me-1"></i> Edit
+                                    </a>
+                                    <a href="/deleteProduct/<%= product.productId %>" 
+                                       class="btn btn-outline-danger"
+                                       onclick="return confirm('Are you sure you want to delete this product?')">
+                                        <i class="fas fa-trash me-1"></i> Delete
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <div class="text-center py-5">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <h3 class="text-muted">No products found</h3>
+                <p class="text-muted">Start by adding some products to your inventory</p>
+                <a href="/addProduct" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Add First Product
+                </a>
+            </div>
+        <% } %>
+    </div>
+
+    <!-- Floating Action Button -->
+    <a href="/addProduct" class="btn btn-primary btn-floating">
+        <i class="fas fa-plus"></i>
+    </a>
+</body>
+</html>

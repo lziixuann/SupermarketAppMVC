@@ -1,0 +1,44 @@
+const db = require('../db');
+
+// Product model (function-based) for MVC pattern
+// Exports an object with methods: getAll, getById, create, update, delete
+// Each method accepts parameters and a callback(err, result)
+
+module.exports = {
+  // Get all products
+  getAll: (callback) => {
+    const sql = 'SELECT * FROM products';
+    db.query(sql, (err, results) => callback(err, results));
+  },
+
+  // Get a single product by ID
+  getById: (productId, callback) => {
+    const sql = 'SELECT * FROM products WHERE productId = ?';
+    db.query(sql, [productId], (err, results) => {
+      if (err) return callback(err);
+      return callback(null, results && results.length ? results[0] : null);
+    });
+  },
+
+  // Add a new product
+  // data: { productName, quantity, price, image }
+  create: (data, callback) => {
+    const { productName, quantity, price, image } = data;
+    const sql = 'INSERT INTO products (productName, quantity, price, image) VALUES (?, ?, ?, ?)';
+    db.query(sql, [productName, quantity, price, image], (err, result) => callback(err, result));
+  },
+
+  // Update an existing product by ID
+  // data: { productName, quantity, price, image }
+  update: (productId, data, callback) => {
+    const { productName, quantity, price, image } = data;
+    const sql = 'UPDATE products SET productName = ?, quantity = ?, price = ?, image = ? WHERE productId = ?';
+    db.query(sql, [productName, quantity, price, image, productId], (err, result) => callback(err, result));
+  },
+
+  // Delete a product by ID
+  delete: (productId, callback) => {
+    const sql = 'DELETE FROM products WHERE productId = ?';
+    db.query(sql, [productId], (err, result) => callback(err, result));
+  }
+};
