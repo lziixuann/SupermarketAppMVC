@@ -1,122 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <title>Add New Product - Supermarket App</title>
-    <style>
-        .hero-section {
-            background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-            color: white;
-            padding: 3rem 0;
-            margin-bottom: 2rem;
-        }
-        .form-card {
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .preview-image {
-            max-height: 200px;
-            object-fit: contain;
-            display: none;
-            margin-top: 10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <title>Add New Product - Cold Container</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Pacifico&display=swap');
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 100%);
+      position: relative;
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2366bb6a' fill-opacity='0.03'%3E%3Cpath d='M0 0h80v80H0V0zm20 20v40h40V20H20zm2 2h36v36H22V22z'/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(circle at 10% 20%, rgba(102, 187, 106, 0.05) 0%, transparent 50%);
+      background-size: 80px 80px, 100% 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .container {
+      position: relative;
+      z-index: 1;
+    }
+    .navbar-brand {
+      font-family: 'Pacifico', cursive;
+      font-size: 1.8rem !important;
+    }
+    .navbar {
+      background-color: #6f9269 !important;
+      position: relative;
+      z-index: 2;
+    }
+    .form-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 2.5rem;
+      box-shadow: 0 4px 15px rgba(102, 187, 106, 0.15);
+      margin-top: 2rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #76a279 0%, #66bb6a 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .btn-primary {
+      background-color: #66bb6a;
+      border-color: #66bb6a;
+    }
+    .btn-primary:hover {
+      background-color: #5a9d4d;
+      border-color: #5a9d4d;
+    }
+    .btn-secondary {
+      background-color: #668760;
+      border-color: #668760;
+    }
+    .btn-secondary:hover {
+      background-color: #556844;
+      border-color: #556844;
+    }
+    .form-control:focus {
+      border-color: #66bb6a;
+      box-shadow: 0 0 0 0.2rem rgba(102, 187, 106, 0.25);
+    }
+    .preview-image {
+      max-height: 120px;
+      object-fit: cover;
+      display: none;
+      margin-top: 10px;
+      border: 2px solid #66bb6a;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-store me-2"></i>
-                Supermarket App
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/">
+        <i class="fas fa-store me-2"></i>
+        Cold Container
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/">
+              <i class="fas fa-home me-1"></i> Home
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/inventory">
+              <i class="fas fa-boxes me-1"></i> Inventory
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <div class="page-header">
+      <h2 class="mb-0">
+        <i class="fas fa-plus-circle me-2"></i>
+        Add New Product
+      </h2>
+    </div>
+    
+    <div class="form-card mx-auto" style="max-width: 600px;">
+      <div class="card-body p-4">
+        <form action="/addProduct" method="POST" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label for="productName" class="form-label">
+              <i class="fas fa-tag me-2"></i>Product Name
+            </label>
+            <input type="text" class="form-control" 
+                   id="productName" name="productName" required
+                   placeholder="Enter product name">
+          </div>
+
+          <div class="mb-3">
+            <label for="quantity" class="form-label">
+              <i class="fas fa-boxes me-2"></i>Quantity
+            </label>
+            <input type="number" class="form-control" 
+                   id="quantity" name="quantity" min="0" step="1" required
+                   placeholder="Enter quantity">
+          </div>
+
+          <div class="mb-3">
+            <label for="price" class="form-label">
+              <i class="fas fa-dollar-sign me-2"></i>Price
+            </label>
+            <input type="number" class="form-control" 
+                   id="price" name="price" min="0" step="0.01" required
+                   placeholder="Enter price">
+          </div>
+
+          <div class="mb-4">
+            <label for="image" class="form-label">
+              <i class="fas fa-upload me-2"></i>Product Image
+            </label>
+            <input class="form-control" type="file" 
+                   id="image" name="image" accept="image/*" required
+                   onchange="previewImage(this)">
+            <img id="preview" class="preview-image img-fluid">
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="fas fa-plus me-2"></i>Add Product
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">
-                            <i class="fas fa-home me-1"></i>
-                            Back to Home
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <div class="hero-section">
-        <div class="container text-center">
-            <h1 class="display-4 mb-3">Add New Product</h1>
-            <p class="lead mb-0">Enter the product details below</p>
-        </div>
+            <a href="/" class="btn btn-secondary">
+              <i class="fas fa-arrow-left me-2"></i>Back to Home
+            </a>
+          </div>
+        </form>
+      </div>
     </div>
-
-    <!-- Main Content -->
-    <div class="container mb-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                <div class="card form-card border-0">
-                    <div class="card-body p-4">
-                        <form action="/addProduct" method="POST" enctype="multipart/form-data">
-                            <div class="mb-4">
-                                <label for="productName" class="form-label">
-                                    <i class="fas fa-tag me-2"></i>Product Name
-                                </label>
-                                <input type="text" class="form-control form-control-lg" 
-                                       id="productName" name="productName" required
-                                       placeholder="Enter product name">
-                            </div>
-
-                            <div class="row mb-4">
-                                <div class="col-md-6">
-                                    <label for="quantity" class="form-label">
-                                        <i class="fas fa-boxes me-2"></i>Quantity
-                                    </label>
-                                    <input type="number" class="form-control form-control-lg" 
-                                           id="quantity" name="quantity" min="0" step="1" required
-                                           placeholder="Enter quantity">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="price" class="form-label">
-                                        <i class="fas fa-dollar-sign me-2"></i>Price
-                                    </label>
-                                    <input type="number" class="form-control form-control-lg" 
-                                           id="price" name="price" min="0" step="0.01" required
-                                           placeholder="Enter price">
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="image" class="form-label">
-                                    <i class="fas fa-image me-2"></i>Product Image
-                                </label>
-                                <input class="form-control form-control-lg" type="file" 
-                                       id="image" name="image" accept="image/*" required
-                                       onchange="previewImage(this)">
-                                <img id="preview" class="preview-image img-fluid rounded">
-                            </div>
-
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="fas fa-plus me-2"></i>Add Product
-                                </button>
-                                <a href="/" class="btn btn-outline-secondary btn-lg">
-                                    <i class="fas fa-times me-2"></i>Cancel
-                                </a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
+  <%- include('partials/cartButton') %>
 
     <script>
         function previewImage(input) {

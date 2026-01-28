@@ -6,43 +6,32 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <title>Supermarket App</title>
+    <title>Cold Container</title>
     <style>
-        .product-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .hero-section {
-            background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-            color: white;
-            padding: 4rem 0;
-            margin-bottom: 2rem;
-        }
-        .btn-floating {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            z-index: 1000;
-        }
-        .product-image {
-            height: 200px;
-            object-fit: cover;
-            width: 100%;
-        }
-        .card-footer {
-            background: transparent;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Pacifico&display=swap');
+        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 100%); position: relative; }
+        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2366bb6a' fill-opacity='0.03'%3E%3Cpath d='M0 0h80v80H0V0zm20 20v40h40V20H20zm2 2h36v36H22V22z'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(circle at 10% 20%, rgba(102,187,106,0.05) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(102,187,106,0.05) 0%, transparent 50%); background-size: 80px 80px, 100% 100%, 100% 100%; pointer-events: none; z-index: 0; }
+        body::after { content: '🍃'; position: fixed; font-size: 200px; opacity: 0.02; top: 10%; right: 5%; pointer-events: none; z-index: 0; transform: rotate(-15deg); }
+        .container { position: relative; z-index: 1; }
+        nav { position: relative; z-index: 2; }
+        .navbar-brand { font-family: 'Pacifico', cursive; font-size: 1.8rem !important; font-weight: 400; }
+        .hero-section { background: linear-gradient(135deg, #76a279 0%, #66bb6a 100%); color: white; padding: 4rem 0; margin-bottom: 2rem; position: relative; overflow: hidden; }
+        .btn-floating { position: fixed; bottom: 2rem; right: 2rem; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1000; background-color: #76a279; color: white; }
+        .product-card { transition: transform 0.2s, box-shadow 0.2s; border: 1px solid #e8f5e9; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 4px 15px rgba(102,187,106,0.2); background: rgba(255,255,255,1); }
+        .navbar { background-color: #6f9269 !important; }
+        .btn-primary { background-color: #66bb6a; border-color: #66bb6a; }
+        .btn-primary:hover { background-color: #5a9d4d; border-color: #5a9d4d; }
+        .btn-outline-primary { color: #66bb6a; border-color: #66bb6a; }
+        .badge { background-color: #81c784 !important; }
+        .product-image { height: 130px; object-fit: cover; width: 100%; }
+        .out-of-stock-badge { position: absolute; top: 10px; right: 10px; background-color: #f44336; color: white; padding: 0.5rem 1rem; border-radius: 5px; font-weight: 600; font-size: 0.9rem; z-index: 10; }
+        .hover-preview { position: absolute; top: 0; left: 0; right: 0; margin: 0; padding: 6px; border-radius: 10px; background: #ffffff; box-shadow: 0 12px 32px rgba(0,0,0,0.25); opacity: 0; transform: scale(1.05); transition: opacity 0.18s ease, transform 0.18s ease; pointer-events: none; z-index: 1000; }
+        .product-card:hover { z-index: 999; }
+        .product-card { overflow: visible; position: relative; }
+        .product-card:hover .hover-preview { opacity: 1; transform: scale(1.1); }
+        .hover-preview img { width: 100%; height: 100%; max-height: 240px; object-fit: cover; border-radius: 8px; }
+        .card-footer { background: transparent; }
     </style>
 </head>
 <body>
@@ -51,7 +40,7 @@
         <div class="container">
             <a class="navbar-brand" href="/">
                 <i class="fas fa-store me-2"></i>
-                Supermarket App
+                Cold Container
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -59,10 +48,21 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/addProduct">
-                            <i class="fas fa-plus me-1"></i>
-                            Add New Product
-                        </a>
+                        <% if (typeof user !== 'undefined' && user) { %>
+                            <% if (!user.isAdmin) { %>
+                                <a class="nav-link" href="/cart"><i class="fas fa-shopping-cart me-1"></i> Cart</a>
+                                <a class="nav-link" href="/order-history"><i class="fas fa-history me-1"></i> Orders</a>
+                            <% } %>
+                            <a class="nav-link" href="/logout">Logout (<%= user.username %>)</a>
+                            <% if (user.isAdmin) { %>
+                                <a class="nav-link ms-2" href="/addProduct">Add New Product</a>
+                                <a class="nav-link" href="/admin/orders"><i class="fas fa-receipt me-1"></i> All Orders</a>
+                            <% } %>
+                        <% } else { %>
+                            <a class="nav-link" href="/cart"><i class="fas fa-shopping-cart me-1"></i> Cart</a>
+                            <a class="nav-link" href="/feedback"><i class="fas fa-comment-dots me-1"></i> Feedback</a>
+                            <a class="nav-link ms-2" href="/login">Login</a>
+                        <% } %>
                     </li>
                 </ul>
             </div>
@@ -71,58 +71,162 @@
 
     <!-- Hero Section -->
     <div class="hero-section">
-        <div class="container text-center">
-            <h1 class="display-4 mb-3">Welcome to Supermarket App!</h1>
-            <p class="lead mb-0">Manage your products with ease</p>
+        <div class="hero-content container position-relative" style="padding-top: 1rem; padding-bottom: 1rem;">
+            <div style="font-family: 'Pacifico', cursive; font-size: 1.2rem; color: #e8f5e9;">
+                <div>Welcome to Cold Container</div>
+                <div style="font-size: 0.9rem; margin-top: 0.5rem;">Fresh products, eco-friendly service</div>
+            </div>
         </div>
     </div>
 
-    <!-- Products Grid -->
+    <!-- Products Grid / Admin Tabs -->
     <div class="container mb-5">
-        <% if (products && products.length) { %>
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                <% products.forEach(function(product) { %>
-                    <div class="col">
-                        <div class="card h-100 product-card border-0 shadow-sm">
-                            <img src="images/<%= product.image %>" class="card-img-top product-image" alt="<%= product.productName %>">
-                            <div class="card-body">
-                                <h5 class="card-title"><%= product.productName %></h5>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="text-primary fw-bold">$<%= product.price.toFixed(2) %></span>
-                                    <span class="badge bg-secondary">Stock: <%= product.quantity %></span>
-                                </div>
-                            </div>
-                            <div class="card-footer border-0">
-                                <div class="d-flex justify-content-between">
-                                    <a href="/updateProduct/<%= product.productId %>" class="btn btn-outline-primary">
-                                        <i class="fas fa-edit me-1"></i> Edit
+        <% if (typeof user !== 'undefined' && user && user.isAdmin) { %>
+            <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" type="button" role="tab">Products</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="feedback-tab" data-bs-toggle="tab" data-bs-target="#feedbacks" type="button" role="tab">Feedback (<%= feedbacks ? feedbacks.length : 0 %>)</button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="products" role="tabpanel">
+                    <% if (products && products.length) { %>
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4" id="productsContainer">
+                            <% products.forEach(function(product) { %>
+                                <div class="col product-item" data-product-name="<%= product.productName.toLowerCase() %>">
+                                    <a href="/product/<%= product.productId %>" class="text-decoration-none">
+                                        <div class="card h-100 product-card border-0 shadow-sm <%= Number(product.quantity) === 0 ? 'out-of-stock' : '' %>">
+                                            <div style="position: relative;">
+                                                <img src="images/<%= product.image %>" class="card-img-top product-image" alt="<%= product.productName %>">
+                                                <div class="hover-preview"><img src="images/<%= product.image %>" alt="<%= product.productName %> preview"></div>
+                                                <% if (Number(product.quantity) === 0) { %>
+                                                    <div class="out-of-stock-badge"><i class="fas fa-times-circle me-1"></i> Out of Stock</div>
+                                                <% } %>
+                                            </div>
+                                            <div class="card-body">
+                                                <h5 class="card-title"><%= product.productName %></h5>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="text-primary fw-bold">$<%= (Number(product.price) || 0).toFixed(2) %></span>
+                                                    <span class="badge bg-secondary">Stock: <%= product.quantity %></span>
+                                                </div>
+                                            </div>
+                                            <div class="card-footer border-0">
+                                                <% if (typeof user !== 'undefined' && user && user.isAdmin) { %>
+                                                    <div class="d-flex justify-content-between">
+                                                        <a href="/updateProduct/<%= product.productId %>" class="btn btn-outline-primary"><i class="fas fa-edit me-1"></i> Edit</a>
+                                                        <a href="/deleteProduct/<%= product.productId %>" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to delete this product?')"><i class="fas fa-trash me-1"></i> Delete</a>
+                                                    </div>
+                                                <% } %>
+                                            </div>
+                                        </div>
                                     </a>
-                                    <a href="/deleteProduct/<%= product.productId %>" 
-                                       class="btn btn-outline-danger"
-                                       onclick="return confirm('Are you sure you want to delete this product?')">
-                                        <i class="fas fa-trash me-1"></i> Delete
-                                    </a>
                                 </div>
-                            </div>
+                            <% }) %>
                         </div>
-                    </div>
-                <% }); %>
+
+                        <div id="notFoundMessage" class="alert alert-info text-center mt-4" style="display: none;"><i class="fas fa-search me-2"></i><strong>Product not found</strong></div>
+
+                    <% } else { %>
+                        <div class="text-center py-5">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h3 class="text-muted">No products found</h3>
+                            <p class="text-muted">Start by adding some products to your inventory</p>
+                            <a href="/addProduct" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Add First Product</a>
+                        </div>
+                    <% } %>
+                </div>
+
+                <div class="tab-pane fade" id="feedbacks" role="tabpanel">
+                    <% if (feedbacks && feedbacks.length > 0) { %>
+                        <div class="list-group">
+                            <% feedbacks.forEach(f => { %>
+                                <div class="list-group-item mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong><%= f.username ? f.username : (f.email || 'Guest') %></strong>
+                                            <% if (f.email) { %><span class="text-muted">&nbsp;(&lt;<%= f.email %>&gt;)</span><% } %>
+                                            <div class="text-muted"><small><%= new Date(f.createdAt).toLocaleString() %></small></div>
+                                        </div>
+                                    </div>
+                                    <p class="mt-2 mb-0"><%= f.message %></p>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% } else { %>
+                        <div class="text-center py-4 text-muted">No feedback yet.</div>
+                    <% } %>
+                </div>
             </div>
+
         <% } else { %>
-            <div class="text-center py-5">
-                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
-                <h3 class="text-muted">No products found</h3>
-                <p class="text-muted">Start by adding some products to your inventory</p>
-                <a href="/addProduct" class="btn btn-primary">
-                    <i class="fas fa-plus me-1"></i> Add First Product
-                </a>
+
+            <div class="mb-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search for products..." style="border-color: #4a7c2c;">
+                </div>
             </div>
+
+            <% if (products && products.length) { %>
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4" id="productsContainer">
+                    <% products.forEach(function(product) { %>
+                        <div class="col product-item" data-product-name="<%= product.productName.toLowerCase() %>">
+                            <a href="/product/<%= product.productId %>" class="text-decoration-none">
+                                <div class="card h-100 product-card border-0 shadow-sm <%= Number(product.quantity) === 0 ? 'out-of-stock' : '' %>">
+                                    <div style="position: relative;">
+                                        <img src="images/<%= product.image %>" class="card-img-top product-image" alt="<%= product.productName %>">
+                                        <div class="hover-preview"><img src="images/<%= product.image %>" alt="<%= product.productName %> preview"></div>
+                                        <% if (Number(product.quantity) === 0) { %><div class="out-of-stock-badge"><i class="fas fa-times-circle me-1"></i> Out of Stock</div><% } %>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title"><%= product.productName %></h5>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-primary fw-bold">$<%= (Number(product.price) || 0).toFixed(2) %></span>
+                                            <span class="badge bg-secondary">Stock: <%= product.quantity %></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    <% }) %>
+                </div>
+
+                <div id="notFoundMessage" class="alert alert-info text-center mt-4" style="display: none;"><i class="fas fa-search me-2"></i><strong>Product not found</strong></div>
+
+            <% } else { %>
+                <div class="text-center py-5">
+                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                    <h3 class="text-muted">No products found</h3>
+                    <p class="text-muted">Start by adding some products to your inventory</p>
+                </div>
+            <% } %>
+
         <% } %>
     </div>
 
-    <!-- Floating Action Button -->
-    <a href="/addProduct" class="btn btn-primary btn-floating">
-        <i class="fas fa-plus"></i>
-    </a>
+    <% if (typeof user !== 'undefined' && user && user.isAdmin) { %>
+        <a href="/addProduct" class="btn btn-primary btn-floating"><i class="fas fa-plus"></i></a>
+    <% } %>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                const productItems = document.querySelectorAll('.product-item');
+                let visibleCount = 0;
+                productItems.forEach(item => {
+                    const productName = item.getAttribute('data-product-name');
+                    if (productName && productName.includes(searchTerm)) { item.style.display = 'block'; visibleCount++; } else { item.style.display = 'none'; }
+                });
+                const notFoundMessage = document.getElementById('notFoundMessage');
+                if (notFoundMessage) { notFoundMessage.style.display = (searchTerm && visibleCount === 0) ? 'block' : 'none'; }
+            });
+        }
+    </script>
+    <%- include('partials/cartButton') %>
 </body>
 </html>

@@ -95,7 +95,7 @@ module.exports = {
         return res.status(500).send('Error updating product');
       }
       if (wantsJson(req)) return res.json({ affectedRows: result.affectedRows });
-      return res.redirect('/inventory');
+      return res.redirect('/');
     });
   },
 
@@ -108,7 +108,7 @@ module.exports = {
         return res.status(500).send('Error deleting product');
       }
       if (wantsJson(req)) return res.json({ affectedRows: result.affectedRows });
-      return res.redirect('/inventory');
+      return res.redirect('/');
     });
   }
 };

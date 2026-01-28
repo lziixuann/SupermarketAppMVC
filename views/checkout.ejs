@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout - Cold Container</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Pacifico&display=swap');
+    body{font-family:'Poppins',sans-serif;background:#f5f5f5}
+    .checkout-box{max-width:900px;margin:2rem auto;background:#fff;padding:2rem;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.08)}
+    .payment-option{border:1px solid #eee;padding:0.75rem;border-radius:8px;cursor:pointer}
+    .payment-option.selected{border-color:#66bb6a;box-shadow:0 2px 8px rgba(102,187,106,0.12)}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="checkout-box">
+      <h3>Checkout</h3>
+      <div class="row">
+        <div class="col-md-7">
+          <h5>Order Summary</h5>
+          <div id="orderSummary" class="mb-3">Loading cart...</div>
+
+          <h5>Payment Method</h5>
+          <div id="paymentMethods" class="mb-3">
+            <div class="d-flex gap-2 flex-wrap">
+              <label class="payment-option" data-method="applepay"><input type="radio" name="payment" value="applepay" class="d-none"> <i class="fab fa-apple fa-lg me-2"></i> Apple Pay</label>
+              <label class="payment-option" data-method="paynow"><input type="radio" name="payment" value="paynow" class="d-none"> <i class="fas fa-qrcode fa-lg me-2"></i> PayNow</label>
+              <label class="payment-option" data-method="visa"><input type="radio" name="payment" value="visa" class="d-none"> <i class="fab fa-cc-visa fa-lg me-2"></i> Visa</label>
+              <label class="payment-option" data-method="mastercard"><input type="radio" name="payment" value="mastercard" class="d-none"> <i class="fab fa-cc-mastercard fa-lg me-2"></i> MasterCard</label>
+              <label class="payment-option" data-method="paypal"><input type="radio" name="payment" value="paypal" class="d-none"> <i class="fab fa-paypal fa-lg me-2"></i> PayPal</label>
+            </div>
+          </div>
+
+          <h5>Billing</h5>
+          <form id="billingForm">
+            <div class="mb-2"><input name="name" class="form-control" placeholder="Full name" required></div>
+            <div class="mb-2"><input name="email" type="email" class="form-control" placeholder="Email" required></div>
+            <div class="mb-2"><input name="address" class="form-control" placeholder="Billing address (optional)"></div>
+          </form>
+
+          <div class="mt-3">
+            <button id="payBtn" class="btn btn-primary btn-lg">Pay now</button>
+            <a href="/cart" class="btn btn-outline-secondary ms-2">Back to Cart</a>
+          </div>
+        </div>
+
+        <div class="col-md-5">
+          <h5>Payment Details</h5>
+          <div id="paymentDetails" class="p-3 border rounded">Select a payment method to see details.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load cart from localStorage and render summary
+    function formatMoney(n){return '$' + (Number(n)||0).toFixed(2)}
+    const cart = JSON.parse(localStorage.getItem('cart')||'[]');
+    const orderSummary = document.getElementById('orderSummary');
+    if (!cart || cart.length===0){ orderSummary.innerHTML = '<p class="text-muted">Your cart is empty. <a href="/">Continue shopping</a></p>'; }
+    else {
+      let html = '<ul class="list-group mb-3">';
+      let subtotal = 0;
+      cart.forEach(i=>{ const line = (Number(i.price)||0)*(Number(i.quantity)||0); subtotal += line; html += `<li class="list-group-item d-flex justify-content-between align-items-center">${i.productName} <span>${i.quantity} x ${formatMoney(i.price)}</span></li>`});
+      html += '</ul>';
+      const tax = +(subtotal*0.07).toFixed(2);
+      const total = +(subtotal+tax).toFixed(2);
+      html += `<div class="mb-2">Subtotal: <strong>${formatMoney(subtotal)}</strong></div>`;
+      html += `<div class="mb-2">Tax (est): <strong>${formatMoney(tax)}</strong></div>`;
+      html += `<div class="mb-3">Total: <strong>${formatMoney(total)}</strong></div>`;
+      orderSummary.innerHTML = html;
+    }
+
+    // payment option selection UI
+    document.querySelectorAll('.payment-option').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        document.querySelectorAll('.payment-option').forEach(x=>x.classList.remove('selected'));
+        el.classList.add('selected');
+        el.querySelector('input[type=radio]').checked = true;
+        const method = el.dataset.method;
+        const details = document.getElementById('paymentDetails');
+        if (method==='applepay') details.innerHTML = '<p>Apple Pay selected. You will be redirected to Apple Pay (mock).</p>';
+        else if (method==='paynow') details.innerHTML = '<p>PayNow selected. Scan or use QR (mock).</p>';
+        else if (method==='visa' || method==='mastercard') details.innerHTML = '<p>Card selected. Enter card details at gateway (mock).</p>';
+        else if (method==='paypal') details.innerHTML = '<p>PayPal selected. You will be redirected to PayPal (mock).</p>';
+      });
+    });
+
+    document.getElementById('payBtn').addEventListener('click', async function(){
+      const selected = document.querySelector('input[name=payment]:checked');
+      if (!selected) return alert('Please choose a payment method');
+      if (!cart || cart.length===0) return alert('Your cart is empty');
+      const billing = Object.fromEntries(new FormData(document.getElementById('billingForm')));
+      if (!billing.name || !billing.email) return alert('Please provide name and email');
+
+      // send order to server
+      this.disabled = true; this.textContent = 'Processing...';
+      try {
+        const resp = await fetch('/checkout', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ cart: cart, paymentMethod: selected.value, billing })
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.success) {
+          alert('Error: ' + (data.error || 'Payment failed'));
+          this.disabled = false; this.textContent = 'Pay now';
+          return;
+        }
+        // clear local cart and redirect to success page with order id
+        localStorage.removeItem('cart');
+        const emailPart = data.email ? ('&email=' + encodeURIComponent(data.email)) : '';
+        window.location = '/checkout/success?orderId=' + encodeURIComponent(data.orderId) + '&total=' + encodeURIComponent(data.total) + emailPart;
+      } catch (e) {
+        alert('Network error');
+        this.disabled = false; this.textContent = 'Pay now';
+      }
+    });
+  </script>
+
+  <%- include('partials/cartButton') %>
+</body>
+</html>

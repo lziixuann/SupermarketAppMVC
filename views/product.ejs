@@ -6,42 +6,320 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <title>Supermarket App</title>
+    <title>Cold Container - Product Details</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Pacifico&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f5f5;
+        }
+        .navbar-brand {
+            font-family: 'Pacifico', cursive;
+            font-size: 1.8rem !important;
+            font-weight: 400;
+        }
+        .navbar {
+            background-color: #668760 !important;
+        }
+        .product-detail {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(102, 187, 106, 0.15);
+            padding: 3rem;
+            margin-top: 3rem;
+            margin-bottom: 3rem;
+        }
+        .product-image-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .product-image-container img {
+            max-width: 400px;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .product-info h2 {
+            color: #2d3e50;
+            margin-bottom: 2rem;
+            font-weight: 700;
+        }
+        .product-info-item {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-left: 4px solid #66bb6a;
+            border-radius: 5px;
+        }
+        .product-info-item label {
+            font-weight: 600;
+            color: #66bb6a;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .product-info-item span {
+            font-size: 1.1rem;
+            color: #2d3e50;
+        }
+        .price-tag {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #66bb6a;
+            margin: 1rem 0;
+        }
+        .stock-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: #81c784;
+            color: white;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .stock-badge.low {
+            background-color: #f44336;
+        }
+        .btn-back {
+            background-color: #66bb6a;
+            border-color: #66bb6a;
+            color: white;
+        }
+        .btn-back:hover {
+            background-color: #5a9d4d;
+            border-color: #5a9d4d;
+            color: white;
+            text-decoration: none;
+        }
+        .no-product-message {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        .no-product-message i {
+            font-size: 4rem;
+            color: #ccc;
+            margin-bottom: 1rem;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
-        <div class="container-fluid">
-          <a class="navbar-brand" href="/">Supermarket App</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="collapsibleNavbar">
-            <ul class="navbar-nav">
-              <!-- Admin check removed -->
-              <!-- Logout link removed -->
-            </ul>
-          </div>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-store me-2"></i>
+                Cold Container
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-arrow-left me-1"></i> Back to Home
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
 
     <div class="container">
-  <!-- User welcome removed -->
-        <br>
-        <div class="text-center"><h2>Product Details</h2></div>
-        <br>
-        <% if (product) { %> <!-- Check if product data exists -->
-            <div>
-                <p><b>Product Name:</b><br> <%= product.productName %></p>
-                <p><b>Product Image:</b><br> <img src = "../images/<%= product.image %>" width="20%"></p>
-                <p><b>Product Quantity:</b><br> <%= product.quantity %></p>
-                <p><b>Price:</b><br> $<%= product.price.toFixed(2) %></p> 
+        <% if (product) { %>
+            <div class="product-detail">
+                <h2 class="text-center mb-4">
+                    <i class="fas fa-box me-2"></i>
+                    Product Details
+                </h2>
+                
+                <div class="row">
+                    <div class="col-md-6 product-image-container">
+                        <img src="/images/<%= product.image %>" alt="<%= product.productName %>">
+                    </div>
+                    
+                    <div class="col-md-6 product-info">
+                        <h2><%= product.productName %></h2>
+                        
+                        <div class="price-tag">
+                            $<%= (Number(product.price) || 0).toFixed(2) %>
+                        </div>
+                        
+                        <div class="product-info-item">
+                            <label>Availability</label>
+                            <span>
+                                <% if (product.quantity > 10) { %>
+                                    <span class="stock-badge">In Stock (<%= product.quantity %> available)</span>
+                                <% } else if (product.quantity > 0) { %>
+                                    <span class="stock-badge low">Low Stock (<%= product.quantity %> left)</span>
+                                <% } else { %>
+                                    <span class="stock-badge low">Out of Stock</span>
+                                <% } %>
+                            </span>
+                        </div>
+                        
+                        <div class="product-info-item">
+                            <label>Quantity in Inventory</label>
+                            <span><%= product.quantity %> units</span>
+                        </div>
+                        
+                        <% if (user && user.isAdmin) { %>
+                        <div class="mt-4">
+                            <a href="/updateProduct/<%= product.productId %>" class="btn btn-warning btn-lg me-2">
+                                <i class="fas fa-edit me-2"></i> Edit Product
+                            </a>
+                            <a href="/deleteProduct/<%= product.productId %>" class="btn btn-danger btn-lg" onclick="return confirm('Are you sure you want to delete this product?')">
+                                <i class="fas fa-trash me-2"></i> Delete Product
+                            </a>
+                        </div>
+                        <% } %>
+                        
+                        <% if (!user || !user.isAdmin) { %>
+                        <div class="product-info-item mt-4">
+                            <label>Add to Cart</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="input-group" style="max-width: 150px;">
+                                    <button class="btn btn-outline-secondary" type="button" id="decreaseQty">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" class="form-control text-center" id="quantity" value="1" min="1" max="<%= product.quantity %>">
+                                    <button class="btn btn-outline-secondary" type="button" id="increaseQty">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <button class="btn btn-success btn-lg" id="addToCartBtn" <% if (product.quantity <= 0) { %>disabled<% } %>>
+                                    <i class="fas fa-shopping-cart me-2"></i> Add to Cart
+                                </button>
+                            </div>
+                            <% if (product.quantity <= 0) { %>
+                                <small class="text-danger d-block mt-2">Out of Stock</small>
+                            <% } %>
+                        </div>
+                        <% } %>
+                        
+                        <div class="mt-4">
+                            <a href="/" class="btn btn-back btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i> Back to Shopping
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         <% } else { %>
-            <p>No product found.</p>
+            <div class="no-product-message">
+                <i class="fas fa-search"></i>
+                <h3 class="text-muted">Product Not Found</h3>
+                <p class="text-muted">Sorry, we couldn't find the product you're looking for.</p>
+                <a href="/" class="btn btn-back mt-3">
+                    <i class="fas fa-arrow-left me-2"></i> Back to Shopping
+                </a>
+            </div>
         <% } %>
-        <a href ="/">Back</a>
     </div>
+
+    <script>
+        // Safely embed product data for client-side use
+        const productData = <%- JSON.stringify(product || null) %>;
+
+        if (productData) {
+            const productId = productData.productId;
+            const maxQuantity = Number(productData.quantity) || 0;
+            const productName = String(productData.productName || 'Product');
+            const productPrice = Number(productData.price) || 0;
+            const productImage = String(productData.image || '');
+
+            const quantityInput = document.getElementById('quantity');
+            const increaseBtn = document.getElementById('increaseQty');
+            const decreaseBtn = document.getElementById('decreaseQty');
+            const addToCartBtn = document.getElementById('addToCartBtn');
+
+            // Increase quantity
+            if (increaseBtn) {
+                increaseBtn.addEventListener('click', function() {
+                    let currentQty = parseInt(quantityInput.value) || 1;
+                    if (currentQty < maxQuantity) {
+                        quantityInput.value = currentQty + 1;
+                    }
+                });
+            }
+
+            // Decrease quantity
+            if (decreaseBtn) {
+                decreaseBtn.addEventListener('click', function() {
+                    let currentQty = parseInt(quantityInput.value) || 1;
+                    if (currentQty > 1) {
+                        quantityInput.value = currentQty - 1;
+                    }
+                });
+            }
+
+            // Add to cart
+            if (addToCartBtn) {
+                addToCartBtn.addEventListener('click', function() {
+                    const quantity = parseInt(quantityInput.value) || 1;
+
+                    if (quantity <= 0 || quantity > maxQuantity) {
+                        alert('Please select a valid quantity');
+                        return;
+                    }
+
+                    // Get existing cart from localStorage
+                    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+                    // Check if product already in cart
+                    const existingItem = cart.find(item => item.productId === productId);
+
+                    if (existingItem) {
+                        // Check combined quantity does not exceed stock
+                        const existingQty = Number(existingItem.quantity || 0);
+                        if (existingQty + quantity > maxQuantity) {
+                            const available = Math.max(0, maxQuantity - existingQty);
+                            alert(`Cannot add ${quantity} items. Only ${available} left in stock.`);
+                            return;
+                        }
+                        // Update quantity if product already in cart
+                        existingItem.quantity = existingQty + quantity;
+                        alert(`Updated cart! Total quantity: ${existingItem.quantity}`);
+                    } else {
+                        // Add new item to cart (include maxQuantity for later enforcement)
+                        cart.push({
+                            productId: productId,
+                            productName: productName,
+                            price: productPrice,
+                            image: productImage,
+                            quantity: quantity,
+                            maxQuantity: maxQuantity
+                        });
+                        alert(`${productName} added to cart!`);
+                    }
+
+                    // Save cart to localStorage
+                    localStorage.setItem('cart', JSON.stringify(cart));
+
+                    // Reset quantity input
+                    quantityInput.value = 1;
+                });
+            }
+
+            // Prevent invalid input in quantity field
+            if (quantityInput) {
+                quantityInput.addEventListener('change', function() {
+                    let value = parseInt(this.value) || 1;
+                    if (value < 1) value = 1;
+                    if (value > maxQuantity) value = maxQuantity;
+                    this.value = value;
+                });
+
+                quantityInput.addEventListener('keypress', function(e) {
+                    // Only allow numbers
+                    if (!/[0-9]/.test(e.key)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+        }
+    </script>
+    <%- include('partials/cartButton') %>
     
 </body>
 </html>

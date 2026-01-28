@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>Cold Container - Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Pacifico&display=swap');
+    body {
+      font-family: 'Poppins', sans-serif;
+    }
+    .navbar {
+      background-color: #1b5e20 !important;
+    }
+    .btn-primary {
+      background-color: #4a7c2c;
+      border-color: #4a7c2c;
+    }
+    .btn-primary:hover {
+      background-color: #2d5016;
+      border-color: #2d5016;
+    }
+    .btn-outline-primary {
+      color: #4a7c2c;
+      border-color: #4a7c2c;
+    }
+    .btn-outline-primary:hover {
+      background-color: #4a7c2c;
+      border-color: #4a7c2c;
+      color: white;
+    }
+    .btn-outline-secondary {
+      color: #558b2f;
+      border-color: #558b2f;
+    }
+    .btn-outline-secondary:hover {
+      background-color: #558b2f;
+      border-color: #558b2f;
+      color: white;
+    }
+    .form-control:focus {
+      border-color: #4a7c2c;
+      box-shadow: 0 0 0 0.2rem rgba(74, 124, 44, 0.25);
+    }
+    .card {
+      border-color: #e8f5e9;
+    }
+    .product-item:hover .card {
+      box-shadow: 0 4px 15px rgba(74, 124, 44, 0.2);
+    }
+    .alert-info {
+      background-color: #c8e6c9;
+      border-color: #81c784;
+      color: #1b5e20;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1>Cold Container Dashboard</h1>
+      <div>
+        <a href="/shopping" class="btn btn-outline-primary">Shop</a>
+        <a href="/cart" class="btn btn-outline-secondary">Cart</a>
+      </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="mb-4">
+      <input type="text" id="searchInput" class="form-control" placeholder="Search for products..." />
+    </div>
+
+    <!-- Products preview -->
+    <% if (products && products.length) { %>
+      <div class="row row-cols-1 row-cols-md-3 g-3" id="productsContainer">
+        <% products.forEach(function(p) { %>
+          <div class="col product-item" data-product-name="<%= p.productName.toLowerCase() %>">
+            <div class="card h-100">
+              <img src="/images/<%= p.image %>" class="card-img-top" style="height:120px;object-fit:cover;" alt="<%= p.productName %>">
+              <div class="card-body">
+                <h5 class="card-title"><%= p.productName %></h5>
+                <p class="mb-0">$<%= (Number(p.price) || 0).toFixed(2) %></p>
+                <small class="text-muted">Stock: <%= p.quantity %></small>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+      <!-- No results message -->
+      <div id="noResultsMessage" style="display:none;" class="alert alert-info text-center">
+        <p>Product not found</p>
+      </div>
+    <% } else { %>
+      <p>No products available.</p>
+    <% } %>
+  </div>
+
+  <script>
+    // Client-side search filtering
+    document.getElementById('searchInput').addEventListener('keyup', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const products = document.querySelectorAll('.product-item');
+      let visibleCount = 0;
+      
+      products.forEach(product => {
+        const name = product.getAttribute('data-product-name');
+        if (name.includes(searchTerm)) {
+          product.style.display = '';
+          visibleCount++;
+        } else {
+          product.style.display = 'none';
+        }
+      });
+      
+      // Show "Product not found" if search term is not empty and no results
+      const noResultsMessage = document.getElementById('noResultsMessage');
+      if (searchTerm && visibleCount === 0) {
+        noResultsMessage.style.display = 'block';
+      } else {
+        noResultsMessage.style.display = 'none';
+      }
+    });
+  </script>
+  <%- include('partials/cartButton') %>
+</body>
+</html>

@@ -40,5 +40,13 @@ module.exports = {
   delete: (productId, callback) => {
     const sql = 'DELETE FROM products WHERE productId = ?';
     db.query(sql, [productId], (err, result) => callback(err, result));
+  },
+
+  // Deduct stock for a product (used at checkout)
+  // productId: the product ID
+  // quantityToDeduct: how many to deduct from stock
+  deductStock: (productId, quantityToDeduct, callback) => {
+    const sql = 'UPDATE products SET quantity = quantity - ? WHERE productId = ? AND quantity >= ?';
+    db.query(sql, [quantityToDeduct, productId, quantityToDeduct], (err, result) => callback(err, result));
   }
 };

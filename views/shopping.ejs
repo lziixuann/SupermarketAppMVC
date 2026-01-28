@@ -45,9 +45,11 @@
         <% for(let i=0; i < products.length; i++) { %>
           <tr>
             <td><a href="/product/<%= products[i].id %>" ><%= products[i].productName %></a></td>
-            <td><img src = "images/<%= products[i].image %>" width="20%"></td>
+  <%- include('partials/cartButton') %>
+    
+            <td><img src="images/<%= products[i].image %>" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;"></td>
             <td><%= products[i].quantity %></td>
-            <td>$<%= products[i].price.toFixed(2) %></td>
+            <td>$<%= (Number(products[i].price) || 0).toFixed(2) %></td>
             <!-- <td>
               <select id="role" name="role" class="form-control" >
                 <option value="1" selected >1</option>

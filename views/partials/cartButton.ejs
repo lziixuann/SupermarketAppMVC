@@ -1,0 +1,59 @@
+<!-- Floating Cart Button partial. Visible to non-admin and unauthenticated users -->
+<% if (typeof user === 'undefined' || !user || !user.isAdmin) { %>
+  <style>
+    .btn-floating-cart {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+      background-color: #66bb6a;
+      color: white;
+      z-index: 1200;
+      text-decoration: none;
+    }
+    .btn-floating-cart:hover { background-color: #5a9d4d; color: #fff; }
+    .cart-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      font-size: 0.65rem;
+      padding: 3px 6px;
+      border-radius: 12px;
+    }
+  </style>
+
+  <a id="cartFloatBtn" href="/cart" class="btn-floating-cart" title="View cart">
+    <i class="fas fa-shopping-cart"></i>
+    <span id="cartCountBadge" class="badge bg-danger cart-badge" style="display:none">0</span>
+  </a>
+
+  <script>
+    (function updateCartBadge(){
+      try {
+        const badge = document.getElementById('cartCountBadge');
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const count = cart.reduce((s,i) => s + (Number(i.quantity) || 0), 0);
+        if (!badge) return;
+        if (count > 0) {
+          badge.style.display = 'inline-block';
+          badge.textContent = count;
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch(e) { /* ignore */ }
+    })();
+
+    // update badge when cart changes in other tabs
+    window.addEventListener('storage', function(e){
+      if (e.key === 'cart') {
+        try { const cart = JSON.parse(e.newValue || '[]'); const count = cart.reduce((s,i)=>s+(Number(i.quantity)||0),0); const badge = document.getElementById('cartCountBadge'); if (badge) { if (count>0){ badge.style.display='inline-block'; badge.textContent=count; } else badge.style.display='none'; } } catch(e){}
+      }
+    });
+  </script>
+<% } %>
