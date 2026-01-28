@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/event-source-polyfill"></script>
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .qr-container { background: white; border-radius: 15px; padding: 3rem; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 500px; text-align: center; }
+        .qr-display { margin: 2rem 0; }
+        .qr-display img { max-width: 300px; height: auto; border: 3px solid #667eea; border-radius: 10px; }
+        .timer { font-size: 1.5rem; font-weight: bold; color: #667eea; margin: 1.5rem 0; }
+        .timer.warning { color: #ff6b6b; }
+        .status { font-size: 1.1rem; color: #666; margin-bottom: 1rem; }
+        .cancel-btn { margin-top: 1.5rem; }
+        .order-info { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="qr-container">
+        <h2><i class="fas fa-mobile-alt"></i> Scan to Pay with NETS</h2>
+
+        <!-- NETS Logo -->
+        <div style="margin-bottom: 1.5rem;">
+            <img src="/images/netsQrLogo.png" alt="NETS Logo" style="max-width: 120px; height: auto;" />
+        </div>
+
+        <% if (orderId) { %>
+        <div class="order-info">
+            <strong>Order ID:</strong> <%= orderId %><br>
+            <strong>Amount:</strong> $<%= Number((order && order.totalAmount) || total || 0).toFixed(2) %>
+            <% if (order && order.items && order.items.length > 0) { %>
+                <hr class="my-2">
+                <div class="text-start">
+                    <strong>Items:</strong>
+                    <ul class="mb-0 ps-3">
+                        <% order.items.forEach((item) => { %>
+                            <li>
+                                <%= item.productName || ('Product #' + item.productId) %>
+                                x <%= item.quantity %>
+                                @ $<%= Number(item.price || 0).toFixed(2) %>
+                            </li>
+                        <% }) %>
+                    </ul>
+                </div>
+            <% } %>
+        </div>
+        <% } %>
+
+        <p class="status" id="status">
+            <i class="fas fa-spinner fa-spin"></i> Waiting for payment confirmation...
+        </p>
+
+        <div class="qr-display">
+            <% if (qrCodeUrl) { %>
+                <img src="<%= qrCodeUrl %>" alt="NETS QR Code" onerror="handleImageError()" />
+            <% } else { %>
+                <div class="alert alert-danger">QR Code could not be generated</div>
+            <% } %>
+        </div>
+
+        <!-- NETS Info Image -->
+        <div style="margin: 2rem 0;">
+            <img src="/images/netsQrInfo.png" alt="NETS Payment Instructions" style="max-width: 100%; height: auto; border-radius: 8px;" />
+        </div>
+
+        <div class="timer" id="timer">
+            <i class="fas fa-hourglass-end"></i> Time remaining: <span id="timerText">5:00</span>
+        </div>
+
+        <div class="text-muted small mb-2" id="txnRef">
+            Transaction Ref: <%= txnRetrievalRef %>
+        </div>
+
+        <% if (mockPayUrl) { %>
+        <div class="alert alert-info text-start small">
+            <div class="fw-semibold mb-1">Mock Scan Target</div>
+            <div class="text-break"><%= mockPayUrl %></div>
+            <div class="mt-1">If scanning is inconvenient, you can open this URL directly.</div>
+        </div>
+        <% } %>
+
+        <div class="cancel-btn">
+            <a href="/checkout" class="btn btn-outline-secondary">
+                <i class="fas fa-times"></i> Cancel Payment
+            </a>
+        </div>
+    </div>
+
+    <script>
+        let orderStatusSource;
+        const orderId = "<%= orderId %>";
+        const txnRetrievalRef = "<%= txnRetrievalRef %>";
+
+        console.log('NETS QR Page loaded');
+        console.log('Order ID:', orderId);
+        console.log('Transaction Reference:', txnRetrievalRef);
+        console.log('NETS REQUEST response:', <%- JSON.stringify(fullNetsResponse) %>);
+
+        function connectOrderStatusStream() {
+            if (!orderId) return;
+
+            if (orderStatusSource) {
+                orderStatusSource.close();
+            }
+
+            const url = `/sse/order-status/${encodeURIComponent(orderId)}`;
+            orderStatusSource = new EventSourcePolyfill(url, { heartbeatTimeout: 150000 });
+
+            orderStatusSource.addEventListener('message', (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'heartbeat') return;
+
+                console.log('Order status update:', data);
+
+                if (data.status === 'successful') {
+                    if (orderStatusSource) orderStatusSource.close();
+                    const email = "<%= email %>";
+                    const total = "<%= total %>";
+                    window.location.href = `/checkout/success?orderId=${encodeURIComponent(orderId)}&total=${encodeURIComponent(total)}&email=${encodeURIComponent(email)}`;
+                } else if (data.status === 'failed') {
+                    if (orderStatusSource) orderStatusSource.close();
+                    window.location.href = `/nets-qr/fail?txn_retrieval_ref=${encodeURIComponent(txnRetrievalRef)}`;
+                } else if (data.status === 'refunded') {
+                    document.getElementById('status').innerHTML = '<span style="color: #0dcaf0;"><i class="fas fa-undo"></i> Payment refunding.</span>';
+                } else {
+                    document.getElementById('status').innerHTML = '<span style="color: #ffc107;"><i class="fas fa-clock"></i> Payment pending confirmation...</span>';
+                }
+            });
+
+            orderStatusSource.onerror = () => {
+                console.warn('Order status SSE disconnected.');
+            };
+        }
+
+        connectOrderStatusStream();
+
+        // Countdown Timer Logic
+        const timerElement = document.getElementById('timerText');
+        const timerContainer = document.getElementById('timer');
+        const countdownDuration = 300; // 5 minutes in seconds
+        let remainingTime = countdownDuration;
+
+        const updateTimer = () => {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            if (remainingTime < 60) {
+                timerContainer.classList.add('warning');
+            }
+
+            remainingTime--;
+
+            if (remainingTime < 0) {
+                clearInterval(timerInterval);
+                timerElement.textContent = 'Expired';
+                document.getElementById('status').innerHTML = '<span style="color: red;"><i class="fas fa-times-circle"></i> Transaction timed out.</span>';
+
+                if (orderStatusSource) {
+                    orderStatusSource.close();
+                }
+                setTimeout(() => {
+                    window.location.href = `/nets-qr/fail?txn_retrieval_ref=${encodeURIComponent(txnRetrievalRef)}`;
+                }, 2000);
+            }
+        };
+
+        const timerInterval = setInterval(updateTimer, 1000);
+        updateTimer();
+
+        function handleImageError() {
+            console.error('Failed to load QR code image');
+            const qrDisplay = document.querySelector('.qr-display');
+            qrDisplay.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Failed to display QR code. Please refresh the page.</div>';
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (orderStatusSource) {
+                orderStatusSource.close();
+            }
+        });
+    </script>
+</body>
+</html>

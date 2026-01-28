@@ -60,6 +60,9 @@
             border-color: #5a9d4d;
             color: white;
         }
+        .status-badge {
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -96,6 +99,11 @@
             <i class="fas fa-history me-2"></i>
             Order History
         </h2>
+        <% if (String((typeof refund !== 'undefined' && refund) || (typeof query !== 'undefined' && query.refund) || '') === '1') { %>
+            <div class="alert alert-info">
+                Refund request submitted. Please allow up to <strong>3 business days</strong> for the refund to be processed.
+            </div>
+        <% } %>
         <% if (!user) { %>
             <form class="row g-2 mb-4" method="get" action="/order-history">
                 <div class="col-auto">
@@ -117,8 +125,18 @@
                                 <small><%= new Date(order.orderDate).toLocaleString() %></small>
                             </div>
                             <div class="text-end">
-                                <h4 class="mb-0">$<%= (Number(order.totalAmount) || 0).toFixed(2) %></h4>
-                                <small><%= order.paymentMethod %></small>
+                                <h4 class="mb-1">$<%= (Number(order.totalAmount) || 0).toFixed(2) %></h4>
+                                <small class="d-block"><%= order.paymentMethod %></small>
+                                <% const status = (order.paymentStatus || 'pending').toLowerCase(); %>
+                                <% if (status === 'successful') { %>
+                                    <span class="badge text-bg-success status-badge">Successful</span>
+                                <% } else if (status === 'failed') { %>
+                                    <span class="badge text-bg-danger status-badge">Failed</span>
+                                <% } else if (status === 'refunded') { %>
+                                    <span class="badge text-bg-info status-badge">Refunding</span>
+                                <% } else { %>
+                                    <span class="badge text-bg-warning status-badge">Pending</span>
+                                <% } %>
                             </div>
                         </div>
                     </div>
@@ -129,7 +147,7 @@
                                     <img src="/images/<%= item.image %>" alt="<%= item.productName %>">
                                     <div class="flex-grow-1">
                                         <h6 class="mb-1"><%= item.productName %></h6>
-                                        <small class="text-muted">Quantity: <%= item.quantity %> × $<%= (Number(item.price) || 0).toFixed(2) %></small>
+                                        <small class="text-muted">Quantity: <%= item.quantity %> x $<%= (Number(item.price) || 0).toFixed(2) %></small>
                                     </div>
                                     <div class="text-end">
                                         <strong>$<%= ((Number(item.price) || 0) * (Number(item.quantity) || 0)).toFixed(2) %></strong>
@@ -138,6 +156,27 @@
                             <% }); %>
                         <% } else { %>
                             <p class="text-muted">No items in this order.</p>
+                        <% } %>
+
+                        <% if ((order.paymentStatus || '').toLowerCase() === 'successful') { %>
+                            <div class="mt-3">
+                                <form method="POST" action="/orders/<%= order.orderId %>/refund" class="border rounded p-3 bg-light">
+                                    <label class="form-label mb-2"><strong>Request a refund</strong></label>
+                                    <textarea name="reason" class="form-control mb-2" rows="2" placeholder="Tell us why you want a refund (required)" required></textarea>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Submit refund request for this order?');">
+                                        <i class="fas fa-undo me-1"></i> Submit Refund
+                                    </button>
+                                </form>
+                            </div>
+                        <% } else if ((order.paymentStatus || '').toLowerCase() === 'refunded') { %>
+                            <div class="mt-3">
+                                <span class="badge text-bg-info">Refunding</span>
+                                <% if (order.refund && order.refund.reason) { %>
+                                    <div class="mt-2 small text-muted">
+                                        <strong>Refund reason:</strong> <%= order.refund.reason %>
+                                    </div>
+                                <% } %>
+                            </div>
                         <% } %>
                     </div>
                 </div>

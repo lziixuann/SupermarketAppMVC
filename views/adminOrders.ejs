@@ -54,6 +54,9 @@
             background-color: #5a9d4d;
             border-color: #5a9d4d;
         }
+        .status-badge {
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -109,7 +112,7 @@
             <% if (typeof totalRevenue !== 'undefined') { %>
                 <div class="alert alert-success">
                     <i class="fas fa-dollar-sign me-2"></i>
-                    Total Revenue: <strong>$<%= (Number(totalRevenue) || 0).toFixed(2) %></strong>
+                    Total Revenue (Successful Only): <strong>$<%= (Number(totalRevenue) || 0).toFixed(2) %></strong>
                 </div>
             <% } %>
 
@@ -130,8 +133,18 @@
                                 </small>
                             </div>
                             <div class="text-end">
-                                <h4 class="mb-0">$<%= (Number(order.totalAmount) || 0).toFixed(2) %></h4>
-                                <small><%= order.paymentMethod %></small>
+                                <h4 class="mb-1">$<%= (Number(order.totalAmount) || 0).toFixed(2) %></h4>
+                                <small class="d-block"><%= order.paymentMethod %></small>
+                                <% const status = (order.paymentStatus || 'pending').toLowerCase(); %>
+                                <% if (status === 'successful') { %>
+                                    <span class="badge text-bg-success status-badge">Successful</span>
+                                <% } else if (status === 'failed') { %>
+                                    <span class="badge text-bg-danger status-badge">Failed</span>
+                                <% } else if (status === 'refunded') { %>
+                                    <span class="badge text-bg-info status-badge">Refunding</span>
+                                <% } else { %>
+                                    <span class="badge text-bg-warning status-badge">Pending</span>
+                                <% } %>
                             </div>
                         </div>
                     </div>
@@ -142,7 +155,7 @@
                                     <img src="/images/<%= item.image %>" alt="<%= item.productName %>">
                                     <div class="flex-grow-1">
                                         <h6 class="mb-1"><%= item.productName %></h6>
-                                        <small class="text-muted">Quantity: <%= item.quantity %> × $<%= (Number(item.price) || 0).toFixed(2) %></small>
+                                        <small class="text-muted">Quantity: <%= item.quantity %> x $<%= (Number(item.price) || 0).toFixed(2) %></small>
                                     </div>
                                     <div class="text-end">
                                         <strong>$<%= ((Number(item.price) || 0) * (Number(item.quantity) || 0)).toFixed(2) %></strong>

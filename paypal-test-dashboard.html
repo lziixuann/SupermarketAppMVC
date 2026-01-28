@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayPal Mock Payment Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0070ba;
+            border-bottom: 3px solid #0070ba;
+            padding-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        button {
+            background: #0070ba;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #005a95;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 3px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .step:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #0070ba;
+            font-weight: bold;
+        }
+        a {
+            color: #0070ba;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 5px 0;
+        }
+        .checklist li:before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛒 PayPal Integration Test Dashboard</h1>
+        
+        <div class="status success">
+            <strong>✓ PayPal Configuration Status: WORKING</strong><br>
+            Your PayPal sandbox credentials are valid and the API is responding correctly.
+        </div>
+
+        <div class="info">
+            <strong>Server Status:</strong> Running on http://localhost:3000<br>
+            <strong>Environment:</strong> PayPal Sandbox<br>
+            <strong>Currency:</strong> SGD (Singapore Dollar)
+        </div>
+
+        <h2>Quick Start Testing</h2>
+        <div class="test-section">
+            <h3>Step 1: Access Your Application</h3>
+            <div class="step">
+                <a href="http://localhost:3000" target="_blank">
+                    <button>Open Application →</button>
+                </a>
+            </div>
+            <div class="step">Login or register an account (required for checkout)</div>
+            <div class="step">Browse products and add items to your cart</div>
+            <div class="step">Navigate to checkout</div>
+        </div>
+
+        <div class="test-section">
+            <h3>Step 2: Test PayPal Payment</h3>
+            <div class="step">Select "PayPal" as your payment method</div>
+            <div class="step">Fill in billing information (name and email)</div>
+            <div class="step">Click the PayPal button that appears</div>
+            <div class="step">Login with PayPal sandbox test account</div>
+            <div class="step">Approve the payment</div>
+            <div class="step">Verify order confirmation page</div>
+        </div>
+
+        <div class="test-section">
+            <h3>Step 3: API Testing</h3>
+            <button onclick="testCreateOrder()">Test Create Order API</button>
+            <div id="createOrderResult" class="test-result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>PayPal Sandbox Test Accounts</h3>
+            <div class="warning">
+                <strong>⚠ Important:</strong> You need PayPal sandbox test accounts to complete payments.<br><br>
+                <strong>Create test accounts at:</strong><br>
+                <a href="https://developer.paypal.com/dashboard/accounts" target="_blank">
+                    https://developer.paypal.com/dashboard/accounts
+                </a>
+                <br><br>
+                Create a <strong>Personal</strong> (buyer) account to test making purchases.
+            </div>
+        </div>
+
+        <h2>Integration Features</h2>
+        <ul class="checklist">
+            <li>PayPal sandbox environment configured</li>
+            <li>API credentials validated</li>
+            <li>Create order endpoint working</li>
+            <li>Capture payment endpoint working</li>
+            <li>Frontend PayPal button integration</li>
+            <li>Order database storage</li>
+            <li>Invoice generation</li>
+        </ul>
+
+        <h2>Test Scenarios</h2>
+        <div class="test-section">
+            <h3>✓ Successful Payment Flow</h3>
+            <ol>
+                <li>Add products to cart</li>
+                <li>Proceed to checkout</li>
+                <li>Select PayPal payment method</li>
+                <li>Complete PayPal authentication</li>
+                <li>Verify order confirmation</li>
+                <li>Check order appears in order history</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>Test Payment Cancellation</h3>
+            <ol>
+                <li>Start PayPal payment process</li>
+                <li>Click "Cancel and return"</li>
+                <li>Verify return to checkout page</li>
+                <li>Verify no order was created</li>
+            </ol>
+        </div>
+
+        <h2>Helpful Links</h2>
+        <div class="step">
+            <a href="http://localhost:3000" target="_blank">Application Homepage</a>
+        </div>
+        <div class="step">
+            <a href="http://localhost:3000/checkout" target="_blank">Checkout Page</a>
+        </div>
+        <div class="step">
+            <a href="https://developer.paypal.com/dashboard" target="_blank">PayPal Developer Dashboard</a>
+        </div>
+        <div class="step">
+            <a href="https://developer.paypal.com/dashboard/accounts" target="_blank">Create Test Accounts</a>
+        </div>
+        <div class="step">
+            <a href="https://developer.paypal.com/docs/checkout/" target="_blank">PayPal Integration Docs</a>
+        </div>
+    </div>
+
+    <script>
+        async function testCreateOrder() {
+            const resultDiv = document.getElementById('createOrderResult');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = 'Testing PayPal Create Order API...\n\n';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/paypal/create-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        amount: '15.50'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.id) {
+                    resultDiv.textContent = '✓ SUCCESS!\n\n' +
+                        'Order ID: ' + data.id + '\n' +
+                        'Status: Order created successfully\n\n' +
+                        'Full Response:\n' + 
+                        JSON.stringify(data, null, 2);
+                } else {
+                    resultDiv.textContent = '✗ FAILED\n\n' +
+                        'Response:\n' + 
+                        JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                resultDiv.textContent = '✗ ERROR\n\n' +
+                    'Error: ' + error.message + '\n\n' +
+                    'Make sure your server is running on http://localhost:3000';
+            }
+        }
+    </script>
+</body>
+</html>

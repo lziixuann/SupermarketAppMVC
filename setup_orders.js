@@ -24,6 +24,10 @@ db.connect((err) => {
     userId INT NULL,
     totalAmount DECIMAL(10, 2) NOT NULL,
     paymentMethod VARCHAR(50),
+    paymentStatus VARCHAR(20) NOT NULL DEFAULT 'pending',
+    paymentProvider VARCHAR(50) NULL,
+    paymentReference VARCHAR(100) NULL,
+    paymentStatusUpdatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     customerName VARCHAR(100) NULL,
     customerEmail VARCHAR(255) NULL,
     orderDate DATETIME NOT NULL,
@@ -48,16 +52,16 @@ db.connect((err) => {
       db.end();
       process.exit(1);
     }
-    console.log('✓ Orders table created/verified');
-    
+    console.log('Orders table created/verified');
+
     db.query(createOrderItemsTable, (err2) => {
       if (err2) {
         console.error('Error creating order_items table:', err2);
         db.end();
         process.exit(1);
       }
-      console.log('✓ Order_items table created/verified');
-      
+      console.log('Order_items table created/verified');
+
       console.log('\nAll tables are ready! You can now process orders.');
       db.end();
       process.exit(0);

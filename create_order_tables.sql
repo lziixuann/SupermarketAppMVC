@@ -6,6 +6,12 @@ CREATE TABLE IF NOT EXISTS orders (
     userId INT NULL,
     totalAmount DECIMAL(10, 2) NOT NULL,
     paymentMethod VARCHAR(50) NOT NULL,
+    paymentStatus VARCHAR(20) NOT NULL DEFAULT 'pending',
+    paymentProvider VARCHAR(50) NULL,
+    paymentReference VARCHAR(100) NULL,
+    paymentStatusUpdatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    customerName VARCHAR(100) NULL,
+    customerEmail VARCHAR(255) NULL,
     orderDate DATETIME NOT NULL,
     FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE SET NULL
 );
@@ -24,6 +30,8 @@ CREATE TABLE IF NOT EXISTS order_items (
 -- Create indexes for better query performance
 CREATE INDEX idx_orders_userId ON orders(userId);
 CREATE INDEX idx_orders_orderDate ON orders(orderDate);
+CREATE INDEX idx_orders_paymentStatus ON orders(paymentStatus);
+CREATE INDEX idx_orders_paymentReference ON orders(paymentReference);
 CREATE INDEX idx_order_items_orderId ON order_items(orderId);
 CREATE INDEX idx_order_items_productId ON order_items(productId);
 

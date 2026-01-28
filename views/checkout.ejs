@@ -8,10 +8,14 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Pacifico&display=swap');
-    body{font-family:'Poppins',sans-serif;background:#f5f5f5}
-    .checkout-box{max-width:900px;margin:2rem auto;background:#fff;padding:2rem;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.08)}
-    .payment-option{border:1px solid #eee;padding:0.75rem;border-radius:8px;cursor:pointer}
-    .payment-option.selected{border-color:#66bb6a;box-shadow:0 2px 8px rgba(102,187,106,0.12)}
+    body { font-family: 'Poppins', sans-serif; background: #f5f5f5; }
+    .checkout-box { max-width: 900px; margin: 2rem auto; background: #fff; padding: 2rem; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    .payment-option { border: 1px solid #eee; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
+    .payment-option.selected { border-color: #66bb6a; box-shadow: 0 2px 8px rgba(102,187,106,0.12); }
+    #paypal-button-container { margin-top: 1rem; }
+    .paypal-section { border-top: 1px solid #eee; padding-top: 1rem; margin-top: 1rem; }
+    .nets-section { border-top: 1px solid #eee; padding-top: 1rem; margin-top: 1rem; text-align: center; }
+    .status-badge { font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -30,6 +34,7 @@
               <label class="payment-option" data-method="paynow"><input type="radio" name="payment" value="paynow" class="d-none"> <i class="fas fa-qrcode fa-lg me-2"></i> PayNow</label>
               <label class="payment-option" data-method="visa"><input type="radio" name="payment" value="visa" class="d-none"> <i class="fab fa-cc-visa fa-lg me-2"></i> Visa</label>
               <label class="payment-option" data-method="mastercard"><input type="radio" name="payment" value="mastercard" class="d-none"> <i class="fab fa-cc-mastercard fa-lg me-2"></i> MasterCard</label>
+              <label class="payment-option" data-method="nets"><input type="radio" name="payment" value="nets" class="d-none"> <i class="fas fa-mobile-alt fa-lg me-2"></i> NETS</label>
               <label class="payment-option" data-method="paypal"><input type="radio" name="payment" value="paypal" class="d-none"> <i class="fab fa-paypal fa-lg me-2"></i> PayPal</label>
             </div>
           </div>
@@ -41,81 +46,380 @@
             <div class="mb-2"><input name="address" class="form-control" placeholder="Billing address (optional)"></div>
           </form>
 
-          <div class="mt-3">
+          <div class="mt-3" id="standardPaymentSection">
             <button id="payBtn" class="btn btn-primary btn-lg">Pay now</button>
             <a href="/cart" class="btn btn-outline-secondary ms-2">Back to Cart</a>
+          </div>
+
+          <!-- PayPal Button Section -->
+          <div class="paypal-section" id="paypalSection" style="display:none;">
+            <div id="paypal-button-container"></div>
+            <a href="/cart" class="btn btn-outline-secondary btn-sm mt-2">Back to Cart</a>
+          </div>
+
+          <!-- NETS QR Section -->
+          <div class="nets-section" id="netsSection" style="display:none;">
+            <h6>Scan to pay with NETS</h6>
+            <form id="netsForm" method="POST" action="/api/nets/generate-qr">
+              <button type="submit" class="btn btn-primary btn-lg">Generate QR Code</button>
+            </form>
+            <a href="/cart" class="btn btn-outline-secondary btn-sm mt-2">Back to Cart</a>
           </div>
         </div>
 
         <div class="col-md-5">
           <h5>Payment Details</h5>
           <div id="paymentDetails" class="p-3 border rounded">Select a payment method to see details.</div>
+
+          <div id="orderStatusBox" class="alert alert-secondary mt-3 d-none" role="alert">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>Payment Status:</strong>
+                <span id="orderStatusBadge" class="badge text-bg-secondary status-badge ms-2">pending</span>
+              </div>
+              <small class="text-muted" id="orderStatusMeta"></small>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- PayPal SDK Script -->
+  <script src="https://www.paypal.com/sdk/js?client-id=<%=process.env.PAYPAL_CLIENT_ID%>&currency=SGD"></script>
+
   <script>
+    let paypalButtonsInitialized = false;
+    let currentOrder = null;
+    let orderStatusSource = null;
+    let redirectedToSuccess = false;
+
     // Load cart from localStorage and render summary
-    function formatMoney(n){return '$' + (Number(n)||0).toFixed(2)}
-    const cart = JSON.parse(localStorage.getItem('cart')||'[]');
+    function formatMoney(n) { return '$' + (Number(n) || 0).toFixed(2); }
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    let currentTotal = 0;
+
     const orderSummary = document.getElementById('orderSummary');
-    if (!cart || cart.length===0){ orderSummary.innerHTML = '<p class="text-muted">Your cart is empty. <a href="/">Continue shopping</a></p>'; }
-    else {
+    if (!cart || cart.length === 0) {
+      orderSummary.innerHTML = '<p class="text-muted">Your cart is empty. <a href="/">Continue shopping</a></p>';
+    } else {
       let html = '<ul class="list-group mb-3">';
       let subtotal = 0;
-      cart.forEach(i=>{ const line = (Number(i.price)||0)*(Number(i.quantity)||0); subtotal += line; html += `<li class="list-group-item d-flex justify-content-between align-items-center">${i.productName} <span>${i.quantity} x ${formatMoney(i.price)}</span></li>`});
+      cart.forEach((i) => {
+        const line = (Number(i.price) || 0) * (Number(i.quantity) || 0);
+        subtotal += line;
+        html += `<li class="list-group-item d-flex justify-content-between align-items-center">${i.productName} <span>${i.quantity} x ${formatMoney(i.price)}</span></li>`;
+      });
       html += '</ul>';
-      const tax = +(subtotal*0.07).toFixed(2);
-      const total = +(subtotal+tax).toFixed(2);
+      const tax = +(subtotal * 0.07).toFixed(2);
+      currentTotal = +(subtotal + tax).toFixed(2);
       html += `<div class="mb-2">Subtotal: <strong>${formatMoney(subtotal)}</strong></div>`;
       html += `<div class="mb-2">Tax (est): <strong>${formatMoney(tax)}</strong></div>`;
-      html += `<div class="mb-3">Total: <strong>${formatMoney(total)}</strong></div>`;
+      html += `<div class="mb-3">Total: <strong>${formatMoney(currentTotal)}</strong></div>`;
       orderSummary.innerHTML = html;
     }
 
+    function billingData() {
+      return Object.fromEntries(new FormData(document.getElementById('billingForm')));
+    }
+
+    function ensureBilling() {
+      const billing = billingData();
+      if (!billing.name || !billing.email) {
+        alert('Please provide name and email');
+        return null;
+      }
+      return billing;
+    }
+
+    function statusPresentation(status) {
+      const value = String(status || 'pending').toLowerCase();
+      if (value === 'successful') return { label: 'Successful', cls: 'text-bg-success' };
+      if (value === 'failed') return { label: 'Failed', cls: 'text-bg-danger' };
+      if (value === 'refunded') return { label: 'Refunding', cls: 'text-bg-info' };
+      return { label: 'Pending', cls: 'text-bg-warning' };
+    }
+
+    function updateStatusUi(status, meta) {
+      const box = document.getElementById('orderStatusBox');
+      const badge = document.getElementById('orderStatusBadge');
+      const metaEl = document.getElementById('orderStatusMeta');
+      if (!box || !badge) return;
+
+      const presentation = statusPresentation(status);
+      badge.textContent = presentation.label;
+      badge.className = `badge status-badge ms-2 ${presentation.cls}`;
+
+      if (metaEl) {
+        const parts = [];
+        if (meta && meta.orderId) parts.push('Order #' + meta.orderId);
+        if (meta && meta.paymentReference) parts.push('Ref: ' + meta.paymentReference);
+        metaEl.textContent = parts.join(' | ');
+      }
+
+      box.classList.remove('d-none');
+    }
+
+    function redirectToSuccess(orderId, total, email) {
+      if (redirectedToSuccess) return;
+      redirectedToSuccess = true;
+      const emailPart = email ? ('&email=' + encodeURIComponent(email)) : '';
+      window.location = '/checkout/success?orderId=' + encodeURIComponent(orderId) + '&total=' + encodeURIComponent(total) + emailPart;
+    }
+
+    function subscribeToOrderStatus(order) {
+      if (!order || !order.orderId) return;
+
+      if (orderStatusSource) {
+        orderStatusSource.close();
+        orderStatusSource = null;
+      }
+
+      orderStatusSource = new EventSource('/sse/order-status/' + encodeURIComponent(order.orderId));
+
+      orderStatusSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'heartbeat') return;
+
+          updateStatusUi(data.status, data);
+
+          if (data.status === 'successful' && currentOrder) {
+            localStorage.removeItem('cart');
+            redirectToSuccess(currentOrder.orderId, currentOrder.total, currentOrder.email);
+          }
+        } catch (err) {
+          console.error('Failed to process SSE message:', err);
+        }
+      };
+
+      orderStatusSource.onerror = () => {
+        // Keep the UI usable even if SSE drops temporarily.
+        console.warn('Order status SSE disconnected.');
+      };
+    }
+
+    async function ensureOrder(method) {
+      const normalizedMethod = String(method || 'unknown').toLowerCase();
+      if (currentOrder && currentOrder.method === normalizedMethod) {
+        return currentOrder;
+      }
+
+      if (!cart || cart.length === 0) {
+        alert('Your cart is empty');
+        return null;
+      }
+
+      const billing = ensureBilling();
+      if (!billing) return null;
+
+      const resp = await fetch('/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cart: cart, paymentMethod: normalizedMethod, billing })
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.success) {
+        throw new Error(data.error || 'Could not create order');
+      }
+
+      currentOrder = {
+        orderId: data.orderId,
+        total: data.total,
+        email: data.email,
+        method: normalizedMethod,
+        paymentStatus: data.paymentStatus
+      };
+
+      updateStatusUi(currentOrder.paymentStatus, currentOrder);
+      subscribeToOrderStatus(currentOrder);
+      return currentOrder;
+    }
+
+    // Initialize PayPal buttons
+    function initPayPalButtons() {
+      if (!window.paypal) {
+        setTimeout(initPayPalButtons, 100);
+        return;
+      }
+
+      if (!window.paypal.Buttons) {
+        document.getElementById('paypal-button-container').innerHTML = '<div class="alert alert-warning">PayPal is not configured. Please contact support.</div>';
+        return;
+      }
+
+      paypal.Buttons({
+        createOrder: async () => {
+          try {
+            const order = await ensureOrder('paypal');
+            if (!order) return null;
+
+            const resp = await fetch('/api/paypal/create-order', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ amount: currentTotal.toString(), orderId: order.orderId })
+            });
+            const data = await resp.json();
+            if (data && data.id) {
+              return data.id;
+            }
+            throw new Error(data.error || 'Failed to create PayPal order');
+          } catch (e) {
+            alert('Error creating PayPal order: ' + e.message);
+            return null;
+          }
+        },
+
+        onApprove: async (data) => {
+          try {
+            const order = await ensureOrder('paypal');
+            if (!order) return;
+
+            const resp = await fetch('/api/paypal/capture-order', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderID: data.orderID, orderId: order.orderId })
+            });
+            const result = await resp.json();
+
+            if (resp.ok && result.success) {
+              localStorage.removeItem('cart');
+              redirectToSuccess(order.orderId, order.total, order.email);
+            } else {
+              alert('Payment was not completed: ' + (result.error || 'Unknown error'));
+            }
+          } catch (e) {
+            alert('Error processing payment: ' + e.message);
+          }
+        },
+
+        onError: (err) => {
+          alert('Payment error: ' + err.message);
+        }
+      })
+        .render('#paypal-button-container')
+        .catch((err) => {
+          console.error('PayPal button render error:', err);
+          document.getElementById('paypal-button-container').innerHTML = '<div class="alert alert-danger">Error loading PayPal button. Please try refreshing the page.</div>';
+        });
+    }
+
     // payment option selection UI
-    document.querySelectorAll('.payment-option').forEach(el=>{
-      el.addEventListener('click', ()=>{
-        document.querySelectorAll('.payment-option').forEach(x=>x.classList.remove('selected'));
+    document.querySelectorAll('.payment-option').forEach((el) => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.payment-option').forEach((x) => x.classList.remove('selected'));
         el.classList.add('selected');
         el.querySelector('input[type=radio]').checked = true;
         const method = el.dataset.method;
         const details = document.getElementById('paymentDetails');
-        if (method==='applepay') details.innerHTML = '<p>Apple Pay selected. You will be redirected to Apple Pay (mock).</p>';
-        else if (method==='paynow') details.innerHTML = '<p>PayNow selected. Scan or use QR (mock).</p>';
-        else if (method==='visa' || method==='mastercard') details.innerHTML = '<p>Card selected. Enter card details at gateway (mock).</p>';
-        else if (method==='paypal') details.innerHTML = '<p>PayPal selected. You will be redirected to PayPal (mock).</p>';
+        const paypalSection = document.getElementById('paypalSection');
+        const standardPaymentSection = document.getElementById('standardPaymentSection');
+        const netsSection = document.getElementById('netsSection');
+
+        netsSection.style.display = 'none';
+
+        if (method === 'applepay') {
+          details.innerHTML = '<p>Apple Pay selected. This flow is mocked and will complete instantly.</p>';
+          standardPaymentSection.style.display = 'block';
+          paypalSection.style.display = 'none';
+        } else if (method === 'paynow') {
+          details.innerHTML = '<p>PayNow selected. This flow is mocked and will complete instantly.</p>';
+          standardPaymentSection.style.display = 'block';
+          paypalSection.style.display = 'none';
+        } else if (method === 'visa' || method === 'mastercard') {
+          details.innerHTML = '<p>Card selected. This flow is mocked and will complete instantly.</p>';
+          standardPaymentSection.style.display = 'block';
+          paypalSection.style.display = 'none';
+        } else if (method === 'paypal') {
+          details.innerHTML = '<p><strong>PayPal</strong> - Secure payment with PayPal. Click the button below to proceed.</p>';
+          standardPaymentSection.style.display = 'none';
+          paypalSection.style.display = 'block';
+          if (!paypalButtonsInitialized) {
+            paypalButtonsInitialized = true;
+            initPayPalButtons();
+          }
+        } else if (method === 'nets') {
+          details.innerHTML = '<p><strong>NETS</strong> - Fast and secure payment with NETS QR code.</p>';
+          standardPaymentSection.style.display = 'none';
+          paypalSection.style.display = 'none';
+          netsSection.style.display = 'block';
+        }
       });
     });
 
-    document.getElementById('payBtn').addEventListener('click', async function(){
+    document.getElementById('payBtn').addEventListener('click', async function () {
       const selected = document.querySelector('input[name=payment]:checked');
       if (!selected) return alert('Please choose a payment method');
-      if (!cart || cart.length===0) return alert('Your cart is empty');
-      const billing = Object.fromEntries(new FormData(document.getElementById('billingForm')));
-      if (!billing.name || !billing.email) return alert('Please provide name and email');
 
-      // send order to server
-      this.disabled = true; this.textContent = 'Processing...';
+      this.disabled = true;
+      this.textContent = 'Processing...';
       try {
-        const resp = await fetch('/checkout', {
-          method: 'POST', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ cart: cart, paymentMethod: selected.value, billing })
-        });
-        const data = await resp.json();
-        if (!resp.ok || !data.success) {
-          alert('Error: ' + (data.error || 'Payment failed'));
-          this.disabled = false; this.textContent = 'Pay now';
+        const order = await ensureOrder(selected.value);
+        if (!order) {
+          this.disabled = false;
+          this.textContent = 'Pay now';
           return;
         }
-        // clear local cart and redirect to success page with order id
+
         localStorage.removeItem('cart');
-        const emailPart = data.email ? ('&email=' + encodeURIComponent(data.email)) : '';
-        window.location = '/checkout/success?orderId=' + encodeURIComponent(data.orderId) + '&total=' + encodeURIComponent(data.total) + emailPart;
+        redirectToSuccess(order.orderId, order.total, order.email);
       } catch (e) {
-        alert('Network error');
-        this.disabled = false; this.textContent = 'Pay now';
+        alert('Error: ' + e.message);
+        this.disabled = false;
+        this.textContent = 'Pay now';
+      }
+    });
+
+    // NETS form submission
+    document.getElementById('netsForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = 'Processing...';
+
+      try {
+        const order = await ensureOrder('nets');
+        if (!order) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+          return;
+        }
+
+        const netsResp = await fetch('/api/nets/generate-qr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cartTotal: currentTotal,
+            orderId: order.orderId,
+            billing: billingData()
+          })
+        });
+
+        if (netsResp.ok) {
+          const html = await netsResp.text();
+          document.open();
+          document.write(html);
+          document.close();
+          return;
+        }
+
+        const errorText = await netsResp.text();
+        console.error('NETS error response:', errorText);
+        alert('Error generating NETS QR code: ' + netsResp.status);
+      } catch (e) {
+        console.error('NETS submission error:', e);
+        alert('Error: ' + e.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (orderStatusSource) {
+        orderStatusSource.close();
+        orderStatusSource = null;
       }
     });
   </script>
