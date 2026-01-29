@@ -101,6 +101,22 @@ module.exports = {
     });
   },
 
+  // Get order by payment reference (e.g., NETS txn_retrieval_ref)
+  getByPaymentReference: (paymentReference, callback) => {
+    const sql = `
+      SELECT orderId, userId, totalAmount, paymentMethod,
+             paymentStatus, paymentProvider, paymentReference, paymentStatusUpdatedAt
+      FROM orders
+      WHERE paymentReference = ?
+      LIMIT 1
+    `;
+    db.query(sql, [paymentReference], (err, results) => {
+      if (err) return callback(err);
+      if (!results || results.length === 0) return callback(null, null);
+      return callback(null, results[0]);
+    });
+  },
+
   // Get all orders for a guest email
   getByEmail: (email, callback) => {
     const sql = `

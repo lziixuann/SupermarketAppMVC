@@ -195,6 +195,15 @@ function getOrderById(orderId) {
   });
 }
 
+function getOrderByPaymentReference(paymentReference) {
+  return new Promise((resolve, reject) => {
+    Order.getByPaymentReference(paymentReference, (err, order) => {
+      if (err) return reject(err);
+      resolve(order || null);
+    });
+  });
+}
+
 async function getAuthorizedOrderForMock(orderId, txn, req) {
   const sessionUser = req.session && req.session.user;
 
@@ -442,20 +451,78 @@ app.post('/checkout', async (req, res) => {
     const tax = +(subtotal * 0.07).toFixed(2);
     const total = +(subtotal + tax).toFixed(2);
 
-    // Deduct stock for each item in the cart
-    for (const item of cart) {
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((resolve, reject) => {
-        Product.deductStock(item.productId, item.quantity, (err, result) => {
-          if (err) return reject(err);
-          resolve(result);
-        });
-      });
-    }
-
     const method = String(paymentMethod || 'unknown').toLowerCase();
     const immediateSuccessMethods = new Set(['applepay', 'paynow', 'visa', 'mastercard']);
     const initialStatus = immediateSuccessMethods.has(method) ? 'successful' : 'pending';
+
+    // Reuse pending order if same cart + method + user
+    const normalizedCart = cart
+      .map((i) => ({
+        productId: Number(i.productId),
+        quantity: Number(i.quantity),
+        price: Number(i.price)
+      }))
+      .sort((a, b) => a.productId - b.productId);
+    const signature = JSON.stringify({
+      userId: currentUser.userId,
+      method,
+      total,
+      email: billing && billing.email ? String(billing.email) : null,
+      cart: normalizedCart
+    });
+
+    const pendingMeta = req.session && req.session.pendingOrder;
+    if (pendingMeta && pendingMeta.signature === signature) {
+      const existing = await getOrderPaymentStatus(pendingMeta.orderId);
+      if (existing && String(existing.paymentStatus || '').toLowerCase() === 'pending') {
+        return res.json({
+          success: true,
+          orderId: existing.orderId,
+          total: existing.totalAmount,
+          paymentStatus: existing.paymentStatus || 'pending',
+          email: billing && billing.email ? String(billing.email) : null,
+          invoiceUrl: null
+        });
+      }
+      // Clear stale pending order
+      req.session.pendingOrder = null;
+    }
+
+    // NETS: also reuse latest pending order by user/method within 10 minutes
+    if (method === 'nets') {
+      const email = billing && billing.email ? String(billing.email) : null;
+      const recentPending = await new Promise((resolve, reject) => {
+        const sql = `
+          SELECT orderId, totalAmount, paymentStatus, customerEmail, orderDate
+          FROM orders
+          WHERE userId = ? AND paymentMethod = ? AND paymentStatus = 'pending'
+          ORDER BY orderDate DESC
+          LIMIT 1
+        `;
+        db.query(sql, [currentUser.userId, method], (err, rows) => {
+          if (err) return reject(err);
+          resolve(rows && rows[0] ? rows[0] : null);
+        });
+      });
+
+      if (recentPending) {
+        const ageMs = Date.now() - new Date(recentPending.orderDate).getTime();
+        const withinWindow = Number.isFinite(ageMs) && ageMs <= 10 * 60 * 1000;
+        const emailMatches = !email || !recentPending.customerEmail || email === recentPending.customerEmail;
+
+        if (withinWindow && emailMatches) {
+          req.session.pendingOrder = { orderId: recentPending.orderId, signature };
+          return res.json({
+            success: true,
+            orderId: recentPending.orderId,
+            total: recentPending.totalAmount,
+            paymentStatus: recentPending.paymentStatus || 'pending',
+            email: email,
+            invoiceUrl: null
+          });
+        }
+      }
+    }
 
     // Create order in database
     const userId = currentUser.userId;
@@ -477,6 +544,17 @@ app.post('/checkout', async (req, res) => {
       );
     });
 
+    // Deduct stock for each item in the cart (only after creating a new order)
+    for (const item of cart) {
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve, reject) => {
+        Product.deductStock(item.productId, item.quantity, (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
+        });
+      });
+    }
+
     // Create order items
     await new Promise((resolve, reject) => {
       Order.createItems(orderId, cart, (err) => {
@@ -497,6 +575,13 @@ app.post('/checkout', async (req, res) => {
       if (invoiceFile) invoiceUrl = '/invoices/' + invoiceFile;
     } catch (e) {
       console.error('Invoice generation failed', e);
+    }
+
+    // Store pending order in session to prevent duplicates
+    if (initialStatus === 'pending') {
+      req.session.pendingOrder = { orderId, signature };
+    } else {
+      req.session.pendingOrder = null;
     }
 
     return res.json({
@@ -671,6 +756,50 @@ app.get('/nets-qr/fail', (req, res) => {
   } catch (err) {
     console.error('Render /nets-qr/fail error', err);
     res.status(500).send('Server error');
+  }
+});
+
+// NETS: Webhook callback (configure NETS to call this URL)
+app.all('/api/nets/webhook', async (req, res) => {
+  try {
+    const payload = { ...(req.query || {}), ...(req.body || {}) };
+    const txnRef =
+      payload.txn_retrieval_ref ||
+      payload.txnRetrievalRef ||
+      payload.txn_id ||
+      payload.txnId ||
+      payload.reference;
+
+    if (!txnRef) {
+      return res.status(400).json({ error: 'txn_retrieval_ref is required' });
+    }
+
+    const order = await getOrderByPaymentReference(txnRef);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found for reference' });
+    }
+
+    const responseCode = String(payload.response_code || payload.responseCode || '').trim();
+    const txnStatus = String(payload.txn_status || payload.txnStatus || payload.status || '').trim().toLowerCase();
+
+    const isSuccess =
+      responseCode === '00' ||
+      txnStatus === 'successful' ||
+      txnStatus === 'success' ||
+      txnStatus === 'completed' ||
+      txnStatus === '2';
+
+    const nextStatus = isSuccess ? 'successful' : 'failed';
+
+    await updateOrderPaymentStatus(order.orderId, nextStatus, {
+      paymentProvider: 'nets',
+      paymentReference: txnRef
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('NETS webhook error:', err);
+    return res.status(500).json({ error: 'Server error' });
   }
 });
 

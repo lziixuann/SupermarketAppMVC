@@ -84,11 +84,14 @@ exports.generateQrCode = async (req, res) => {
       const txnRetrievalRef = qrData.txn_retrieval_ref;
       const courseInitId = getCourseInitIdParam();
 
-      const webhookUrl = `https://sandbox.nets.openapipaas.com/api/v1/common/payments/nets/webhook?txn_retrieval_ref=${txnRetrievalRef}&course_init_id=${courseInitId}`;
+      const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
+      const host = req.get('host');
+      const webhookUrl = `${proto}://${host}/api/nets/webhook`;
 
       console.log('Transaction retrieval ref:' + txnRetrievalRef);
       console.log('courseInitId:' + courseInitId);
       console.log('webhookUrl:' + webhookUrl);
+      console.log('Configure NETS webhook to call this URL after payment.');
 
       try {
         await markOrderPending(orderId, txnRetrievalRef);

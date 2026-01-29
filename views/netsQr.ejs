@@ -93,11 +93,7 @@
                 <i class="fas fa-times"></i> Cancel Payment
             </a>
         </div>
-        <div class="mt-2">
-            <a class="btn btn-link" href="/nets-qr/confirm?orderId=<%= encodeURIComponent(orderId) %>&total=<%= encodeURIComponent(total) %>&email=<%= encodeURIComponent(email || '') %>&txn=<%= encodeURIComponent(txnRetrievalRef) %>">
-                Payment completed? Click here to confirm.
-            </a>
-        </div>
+        <!-- Auto-redirect on success; no manual confirm link shown -->
     </div>
 
     <script>
@@ -203,6 +199,26 @@
         })();
 
         connectOrderStatusStream();
+
+        // Fallback polling if SSE is blocked or unavailable
+        (function startStatusPolling() {
+            if (!orderId) return;
+            const email = "<%= email %>";
+            const total = "<%= total %>";
+            const poll = async () => {
+                try {
+                    const resp = await fetch(`/api/orders/${encodeURIComponent(orderId)}/payment-status`, { cache: 'no-store' });
+                    if (!resp.ok) return;
+                    const data = await resp.json();
+                    if (data && data.status === 'successful') {
+                        window.location.href = `/checkout/success?orderId=${encodeURIComponent(orderId)}&total=${encodeURIComponent(total)}&email=${encodeURIComponent(email)}`;
+                    }
+                } catch (err) {
+                    // Ignore polling errors
+                }
+            };
+            setInterval(poll, 5000);
+        })();
 
         function handleImageError() {
             console.error('Failed to load QR code image');
