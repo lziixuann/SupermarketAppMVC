@@ -63,6 +63,17 @@
                             <% } %>
                             <div class="meta"><small><%= new Date(f.createdAt).toLocaleString() %></small></div>
                         </div>
+                        <% if (f.rating) { %>
+                            <div class="text-warning">
+                                <% for (let i = 1; i <= 5; i++) { %>
+                                    <% if (i <= f.rating) { %>
+                                        <i class="fas fa-star"></i>
+                                    <% } else { %>
+                                        <i class="far fa-star"></i>
+                                    <% } %>
+                                <% } %>
+                            </div>
+                        <% } %>
                     </div>
                     <hr>
                     <div class="message"><%= f.message %></div>

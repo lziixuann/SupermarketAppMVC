@@ -108,6 +108,12 @@ exports.generateQrCode = async (req, res) => {
           ? Number(orderDetails.totalAmount)
           : Number(cartTotal);
 
+      const timerSeconds = 300;
+      const startedAtRaw =
+        (orderDetails && orderDetails.paymentStatusUpdatedAt) ? new Date(orderDetails.paymentStatusUpdatedAt) : new Date();
+      const startedAt = Number.isFinite(startedAtRaw.getTime()) ? startedAtRaw : new Date();
+      const elapsedSeconds = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000));
+      const timerRemaining = Math.max(0, timerSeconds - elapsedSeconds);
       const renderData = {
         total: resolvedTotal,
         orderId: orderId,
@@ -121,7 +127,8 @@ exports.generateQrCode = async (req, res) => {
         txnRetrievalRef: txnRetrievalRef,
         courseInitId: courseInitId,
         networkCode: qrData.network_status,
-        timer: 300, // Timer in seconds
+        timer: timerRemaining, // Timer in seconds
+        timerStartedAt: startedAt.toISOString(),
         webhookUrl: webhookUrl,
         fullNetsResponse: response.data,
         apiKey: process.env.API_KEY,
@@ -212,6 +219,12 @@ async function generateMockQrCode(req, res, cartTotal, orderId, billing) {
     // This keeps the "scan QR to pay" experience while staying in-app.
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(mockPayUrl)}`;
 
+    const timerSeconds = 300;
+    const startedAtRaw =
+      (orderDetails && orderDetails.paymentStatusUpdatedAt) ? new Date(orderDetails.paymentStatusUpdatedAt) : new Date();
+    const startedAt = Number.isFinite(startedAtRaw.getTime()) ? startedAtRaw : new Date();
+    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000));
+    const timerRemaining = Math.max(0, timerSeconds - elapsedSeconds);
     const renderData = {
       total: resolvedTotal,
       orderId: orderId,
@@ -225,7 +238,8 @@ async function generateMockQrCode(req, res, cartTotal, orderId, billing) {
       txnRetrievalRef: txnRetrievalRef,
       courseInitId: courseInitId,
       networkCode: 0,
-      timer: 300,
+      timer: timerRemaining,
+      timerStartedAt: startedAt.toISOString(),
       webhookUrl: '#',
       fullNetsResponse: { mock: true },
       apiKey: 'MOCK',

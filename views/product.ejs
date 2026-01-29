@@ -100,6 +100,38 @@
             color: #ccc;
             margin-bottom: 1rem;
         }
+        .rating-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+        .rating-stars {
+            color: #f4c150;
+        }
+        .rating-stars .muted {
+            color: #d9d9d9;
+        }
+        .rating-input {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-start;
+            gap: 0.25rem;
+        }
+        .rating-input input {
+            display: none;
+        }
+        .rating-input label {
+            font-size: 1.6rem;
+            color: #d9d9d9;
+            cursor: pointer;
+            margin: 0;
+        }
+        .rating-input input:checked ~ label,
+        .rating-input label:hover,
+        .rating-input label:hover ~ label {
+            color: #f4c150;
+        }
     </style>
 </head>
 <body>
@@ -144,7 +176,30 @@
                         <div class="price-tag">
                             $<%= (Number(product.price) || 0).toFixed(2) %>
                         </div>
-                        
+
+                        <div class="product-info-item">
+                            <label>Rating Summary</label>
+                            <% const safeRatingStats = (typeof ratingStats !== 'undefined' && ratingStats) ? ratingStats : { avgRating: 0, ratingCount: 0 }; %>
+                            <% const avgRating = safeRatingStats.avgRating ? Number(safeRatingStats.avgRating) : 0; %>
+                            <% const ratingCount = safeRatingStats.ratingCount ? Number(safeRatingStats.ratingCount) : 0; %>
+                            <% const rounded = Math.max(0, Math.min(5, Math.ceil(avgRating))); %>
+                            <div class="rating-summary">
+                                <div class="rating-stars" aria-label="Average rating">
+                                    <% for (let i = 1; i <= 5; i++) { %>
+                                        <% if (i <= rounded) { %>
+                                            <i class="fas fa-star"></i>
+                                        <% } else { %>
+                                            <i class="fas fa-star muted"></i>
+                                        <% } %>
+                                    <% } %>
+                                </div>
+                                <div>
+                                    <strong><%= avgRating.toFixed(1) %></strong> / 5
+                                    <span class="text-muted">(<%= ratingCount %> ratings)</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="product-info-item">
                             <label>Availability</label>
                             <span>
@@ -201,6 +256,41 @@
                             <a href="/" class="btn btn-back btn-lg">
                                 <i class="fas fa-arrow-left me-2"></i> Back to Shopping
                             </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="product-info-item">
+                            <label>Reviews</label>
+                            <% if (query && String(query.rated || '') === '1') { %>
+                                <div class="small text-success mb-2">Thanks — your rating has been saved.</div>
+                            <% } %>
+                            <% if (user) { %>
+                                <form method="POST" action="/product/<%= product.productId %>/rate">
+                                    <div class="rating-input" aria-label="Rate this product">
+                                        <input type="radio" id="star5" name="rating" value="5" <%= Number(userRating) === 5 ? 'checked' : '' %> required>
+                                        <label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
+                                        <input type="radio" id="star4" name="rating" value="4" <%= Number(userRating) === 4 ? 'checked' : '' %>>
+                                        <label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
+                                        <input type="radio" id="star3" name="rating" value="3" <%= Number(userRating) === 3 ? 'checked' : '' %>>
+                                        <label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
+                                        <input type="radio" id="star2" name="rating" value="2" <%= Number(userRating) === 2 ? 'checked' : '' %>>
+                                        <label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
+                                        <input type="radio" id="star1" name="rating" value="1" <%= Number(userRating) === 1 ? 'checked' : '' %>>
+                                        <label for="star1" title="1 star"><i class="fas fa-star"></i></label>
+                                    </div>
+                                    <button class="btn btn-outline-primary btn-sm mt-2" type="submit">
+                                        <i class="fas fa-star me-1"></i> Submit Rating
+                                    </button>
+                                    <% if (userRating) { %>
+                                        <div class="small text-muted mt-1">Your current rating: <%= userRating %> star(s)</div>
+                                    <% } %>
+                                </form>
+                            <% } else { %>
+                                <div class="small text-muted">Log in to leave a star rating review.</div>
+                            <% } %>
                         </div>
                     </div>
                 </div>

@@ -7,7 +7,17 @@ const db = require('../db');
 module.exports = {
   // Get all products
   getAll: (callback) => {
-    const sql = 'SELECT * FROM products';
+    const sql = `
+      SELECT p.*,
+             COALESCE(r.avgRating, 0) AS avgRating,
+             COALESCE(r.ratingCount, 0) AS ratingCount
+      FROM products p
+      LEFT JOIN (
+        SELECT productId, AVG(rating) AS avgRating, COUNT(*) AS ratingCount
+        FROM product_ratings
+        GROUP BY productId
+      ) r ON r.productId = p.productId
+    `;
     db.query(sql, (err, results) => callback(err, results));
   },
 

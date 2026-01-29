@@ -1,4 +1,5 @@
 const Product = require('../models/product');
+const ProductRating = require('../models/productRating');
 
 // Product controller for SupermarketAppMVC
 // Exports methods for: list, getById, create, update, delete
@@ -40,11 +41,41 @@ module.exports = {
       }
       if (!product) return res.status(404).send('Product not found');
       if (wantsJson(req)) return res.json(product);
-      try {
-        return res.render('product', { product, user: req.session && req.session.user });
-      } catch (e) {
-        return res.json(product);
-      }
+      const user = req.session && req.session.user;
+      ProductRating.getStats(id, (statsErr, stats) => {
+        if (statsErr) console.error('Error loading rating stats:', statsErr);
+        const ratingStats = stats || { avgRating: 0, ratingCount: 0 };
+
+        if (user && user.userId) {
+          ProductRating.getUserRating(id, user.userId, (userErr, userRating) => {
+            if (userErr) console.error('Error loading user rating:', userErr);
+            try {
+              return res.render('product', {
+                product,
+                user,
+                ratingStats,
+                userRating: userRating || null,
+                query: req.query || {}
+              });
+            } catch (e) {
+              return res.json(product);
+            }
+          });
+          return;
+        }
+
+        try {
+          return res.render('product', {
+            product,
+            user,
+            ratingStats,
+            userRating: null,
+            query: req.query || {}
+          });
+        } catch (e) {
+          return res.json(product);
+        }
+      });
     });
   },
 

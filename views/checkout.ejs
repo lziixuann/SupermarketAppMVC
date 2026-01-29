@@ -61,6 +61,11 @@
           <div class="nets-section" id="netsSection" style="display:none;">
             <h6>Scan to pay with NETS</h6>
             <form id="netsForm" method="POST" action="/api/nets/generate-qr">
+              <input type="hidden" name="cartTotal" id="netsCartTotal">
+              <input type="hidden" name="orderId" id="netsOrderId">
+              <input type="hidden" name="billing[name]" id="netsBillingName">
+              <input type="hidden" name="billing[email]" id="netsBillingEmail">
+              <input type="hidden" name="billing[address]" id="netsBillingAddress">
               <button type="submit" class="btn btn-primary btn-lg">Generate QR Code</button>
             </form>
             <a href="/cart" class="btn btn-outline-secondary btn-sm mt-2">Back to Cart</a>
@@ -370,7 +375,7 @@
       }
     });
 
-    // NETS form submission
+    // NETS form submission (submit full page instead of document.write)
     document.getElementById('netsForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const submitBtn = this.querySelector('button[type="submit"]');
@@ -386,27 +391,14 @@
           return;
         }
 
-        const netsResp = await fetch('/api/nets/generate-qr', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cartTotal: currentTotal,
-            orderId: order.orderId,
-            billing: billingData()
-          })
-        });
+        const billing = billingData();
+        document.getElementById('netsCartTotal').value = currentTotal;
+        document.getElementById('netsOrderId').value = order.orderId;
+        document.getElementById('netsBillingName').value = billing.name || '';
+        document.getElementById('netsBillingEmail').value = billing.email || '';
+        document.getElementById('netsBillingAddress').value = billing.address || '';
 
-        if (netsResp.ok) {
-          const html = await netsResp.text();
-          document.open();
-          document.write(html);
-          document.close();
-          return;
-        }
-
-        const errorText = await netsResp.text();
-        console.error('NETS error response:', errorText);
-        alert('Error generating NETS QR code: ' + netsResp.status);
+        this.submit();
       } catch (e) {
         console.error('NETS submission error:', e);
         alert('Error: ' + e.message);

@@ -89,6 +89,17 @@ const ensureProductRatingsTable = () => {
 };
 ensureProductRatingsTable();
 
+// Ensure feedbacks table has a rating column (optional star rating)
+const ensureFeedbackRatingColumn = () => {
+  const sql = 'ALTER TABLE feedbacks ADD COLUMN rating INT NULL';
+  db.query(sql, (err) => {
+    if (err && err.code !== 'ER_DUP_FIELDNAME') {
+      console.error('Error ensuring feedback rating column:', err);
+    }
+  });
+};
+ensureFeedbackRatingColumn();
+
 // Middleware: ensure user is admin
 const ensureAdmin = (req, res, next) => {
   if (!req.session || !req.session.user || !req.session.user.isAdmin) {
@@ -626,7 +637,7 @@ app.post('/api/nets/generate-qr', async (req, res) => {
     const { error, status } = await getAuthorizedOrder(orderId, req);
     if (error) return res.status(status).json({ error });
 
-    req.isAjax = true;
+    req.isAjax = req.get('x-requested-with') === 'XMLHttpRequest';
     await nets.generateQrCode(req, res);
   } catch (err) {
     console.error('NETS QR generation error:', err);
@@ -660,6 +671,30 @@ app.get('/nets-qr/fail', (req, res) => {
   } catch (err) {
     console.error('Render /nets-qr/fail error', err);
     res.status(500).send('Server error');
+  }
+});
+
+// NETS: Manual confirm (fallback) to mark payment successful and redirect
+app.get('/nets-qr/confirm', async (req, res) => {
+  try {
+    const { orderId, total, email, txn } = req.query || {};
+    if (!orderId) return res.status(400).send('Invalid order id');
+
+    const { order, error, status } = await getAuthorizedOrder(orderId, req);
+    if (error) return res.status(status).send(error);
+
+    await updateOrderPaymentStatus(order.orderId, 'successful', {
+      paymentProvider: 'nets',
+      paymentReference: txn || order.paymentReference || null
+    });
+
+    const emailPart = email ? `&email=${encodeURIComponent(email)}` : '';
+    return res.redirect(
+      `/checkout/success?orderId=${encodeURIComponent(order.orderId)}&total=${encodeURIComponent(total || order.totalAmount)}${emailPart}`
+    );
+  } catch (err) {
+    console.error('NETS confirm error:', err);
+    return res.status(500).send('Server error');
   }
 });
 
@@ -890,10 +925,18 @@ app.get('/admin/orders', (req, res) => {
         return res.status(500).send('Error retrieving orders');
       }
 
+      // Ensure most recent orders appear first (fallback to orderId if dates missing)
+      const sortedOrders = (orders || []).slice().sort((a, b) => {
+        const dateA = new Date(a.orderDate || 0).getTime();
+        const dateB = new Date(b.orderDate || 0).getTime();
+        if (dateA !== dateB) return dateB - dateA;
+        return Number(b.orderId || 0) - Number(a.orderId || 0);
+      });
+
       // Compute total revenue from successful orders only
       let totalRevenue = 0;
       try {
-        totalRevenue = orders.reduce((sum, o) => {
+        totalRevenue = (sortedOrders || []).reduce((sum, o) => {
           if ((o.paymentStatus || '').toLowerCase() !== 'successful') return sum;
           const amt = Number(o.totalAmount || o.total || o.total_amount || 0) || 0;
           return sum + amt;
@@ -904,7 +947,7 @@ app.get('/admin/orders', (req, res) => {
         totalRevenue = 0;
       }
 
-      res.render('adminOrders', { orders, user: req.session.user, totalRevenue });
+      res.render('adminOrders', { orders: sortedOrders, user: req.session.user, totalRevenue });
     });
   } catch (err) {
     console.error('Render /admin/orders error', err);
@@ -949,7 +992,11 @@ app.post('/feedback', (req, res) => {
     const message = req.body && req.body.message ? String(req.body.message) : null;
     if (!message) return res.status(400).send('Message is required');
 
-    Feedback.create({ userId, email, message }, (err) => {
+    const parsedRating = req.body && req.body.rating ? parseInt(req.body.rating, 10) : null;
+    const safeRating =
+      parsedRating && Number.isFinite(parsedRating) && parsedRating >= 1 && parsedRating <= 5 ? parsedRating : null;
+
+    Feedback.create({ userId, email, message, rating: safeRating }, (err) => {
       if (err) {
         console.error('Error saving feedback', err);
         return res.status(500).send('Could not save feedback');
@@ -964,6 +1011,40 @@ app.post('/feedback', (req, res) => {
 
 // Product details
 app.get('/product/:id', (req, res) => SupermarketController.getById(req, res));
+
+// Product rating (customers)
+app.post('/product/:id/rate', async (req, res) => {
+  try {
+    const user = req.session && req.session.user;
+    if (!user || !user.userId) {
+      return res.status(403).send('You must be logged in to rate products.');
+    }
+
+    const productId = parseInt(req.params.id, 10);
+    if (!productId) return res.status(400).send('Invalid product id');
+
+    const rating = parseInt(req.body && req.body.rating, 10);
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).send('Rating must be between 1 and 5.');
+    }
+
+    const product = await new Promise((resolve, reject) => {
+      Product.getById(productId, (err, p) => (err ? reject(err) : resolve(p)));
+    });
+    if (!product) return res.status(404).send('Product not found');
+
+    ProductRating.upsert(productId, user.userId, rating, (err) => {
+      if (err) {
+        console.error('Error saving rating:', err);
+        return res.status(500).send('Could not save rating');
+      }
+      return res.redirect(`/product/${productId}?rated=1`);
+    });
+  } catch (err) {
+    console.error('Rate product error:', err);
+    return res.status(500).send('Server error');
+  }
+});
 
 // Add product (admin only)
 app.get('/addProduct', ensureAdmin, (req, res) => res.render('addProduct', { user: req.session.user }));

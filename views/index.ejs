@@ -32,6 +32,8 @@
         .product-card:hover .hover-preview { opacity: 1; transform: scale(1.1); }
         .hover-preview img { width: 100%; height: 100%; max-height: 240px; object-fit: cover; border-radius: 8px; }
         .card-footer { background: transparent; }
+        .rating-stars { color: #f4c150; }
+        .rating-stars .muted { color: #d9d9d9; }
     </style>
 </head>
 <body>
@@ -111,6 +113,21 @@
                                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                                     <span class="text-primary fw-bold">$<%= (Number(product.price) || 0).toFixed(2) %></span>
                                                     <span class="badge bg-secondary">Stock: <%= product.quantity %></span>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2 small">
+                                                    <% const avg = Number(product.avgRating || 0); %>
+                                                    <% const count = Number(product.ratingCount || 0); %>
+                                                    <% const rounded = Math.round(avg); %>
+                                                    <span class="rating-stars">
+                                                        <% for (let i = 1; i <= 5; i++) { %>
+                                                            <% if (i <= rounded) { %>
+                                                                <i class="fas fa-star"></i>
+                                                            <% } else { %>
+                                                                <i class="fas fa-star muted"></i>
+                                                            <% } %>
+                                                        <% } %>
+                                                    </span>
+                                                    <span class="text-muted"><%= avg.toFixed(1) %> (<%= count %>)</span>
                                                 </div>
                                             </div>
                                             <div class="card-footer border-0">
